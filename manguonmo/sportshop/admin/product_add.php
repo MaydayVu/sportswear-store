@@ -804,7 +804,7 @@ if (isset($_POST["submit"])) {
                     </div>
                     <div>
                         <input type="number" class="form-control quantity-input" name="size_quantities[]" 
-                               min="0" value="${quantity}" placeholder="Số lượng" required>
+                            min="0" value="${quantity}" placeholder="Số lượng" required>
                     </div>
                     <div>
                         <button type="button" class="btn-remove-size" onclick="removeSizeItem(this)">
