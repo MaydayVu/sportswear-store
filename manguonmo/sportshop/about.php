@@ -539,73 +539,8 @@ include "config.php";
                         </div>
                     </div>
                 </div>
-                <!-- Member 2 -->
-                <div class="team-card">
-                    <div class="member-avatar">HV</div>
-                    <div class="member-info">
-                        <h3 class="member-name">Trần Lâm Hoàng Vũ</h3>
-                        <div class="member-id">MSSV: 64133025</div>
-                        <div class="member-role">Front-end Developer & UI/UX Designer</div>
-                        
-                        <div class="member-skills">
-                            <span class="skill-tag">HTML/CSS</span>
-                            <span class="skill-tag">JavaScript</span>
-                            <span class="skill-tag">React</span>
-                            <span class="skill-tag">Figma</span>
-                        </div>
-                        
-                        <p class="member-bio">
-                            Chuyên về trải nghiệm người dùng và giao diện. Luôn tìm kiếm 
-                            những xu hướng thiết kế mới để tạo ra trải nghiệm tốt nhất.
-                        </p>
-                        
-                        <div class="member-social">
-                            <a href="#" class="social-link">
-                                <i class="fab fa-facebook-f"></i>
-                            </a>
-                            <a href="#" class="social-link">
-                                <i class="fab fa-github"></i>
-                            </a>
-                            <a href="#" class="social-link">
-                                <i class="fab fa-dribbble"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Member 3 -->
-                <div class="team-card">
-                    <div class="member-avatar">ĐQ</div>
-                    <div class="member-info">
-                        <h3 class="member-name">Huỳnh Quang Đức</h3>
-                        <div class="member-id">MSSV: 63133733</div>
-                        <div class="member-role">Back-end Developer & Database Architect</div>
-                        
-                        <div class="member-skills">
-                            <span class="skill-tag">PHP</span>
-                            <span class="skill-tag">MySQL</span>
-                            <span class="skill-tag">API</span>
-                            <span class="skill-tag">Security</span>
-                        </div>
-                        
-                        <p class="member-bio">
-                            Chuyên gia về database và bảo mật hệ thống. Đảm bảo dữ liệu 
-                            được xử lý an toàn và hiệu quả.
-                        </p>
-                        
-                        <div class="member-social">
-                            <a href="#" class="social-link">
-                                <i class="fab fa-facebook-f"></i>
-                            </a>
-                            <a href="#" class="social-link">
-                                <i class="fab fa-github"></i>
-                            </a>
-                            <a href="#" class="social-link">
-                                <i class="fab fa-stack-overflow"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
+
             </div>
         </div>
     </section>
