@@ -7,6 +7,15 @@ $gender = isset($_GET['gender']) ? $_GET['gender'] : '';
 $category_id = isset($_GET['category']) ? (int)$_GET['category'] : 0;
 $sport = isset($_GET['sport']) ? $_GET['sport'] : '';
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+$sort = isset($_GET['sort']) ? $_GET['sort'] : 'newest';
+$price_min = isset($_GET['price_min']) ? floatval($_GET['price_min']) : 0;
+$price_max = isset($_GET['price_max']) ? floatval($_GET['price_max']) : 0;
+$brand = isset($_GET['brand']) ? $_GET['brand'] : '';
+
+// Phân trang
+$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$limit = 12;
+$offset = ($page - 1) * $limit;
 
 // Xây dựng query
 $sql = "SELECT DISTINCT p.*, c.name AS category_name 
@@ -36,15 +45,77 @@ if ($sport && $sport != 'all') {
 }
 
 if ($search) {
-    $sql .= " AND (p.name LIKE ? OR p.brand LIKE ? OR p.description LIKE ?)";
+    $sql .= " AND (p.name LIKE ? OR p.brand LIKE ? OR p.description LIKE ? OR c.name LIKE ?)";
     $search_term = "%$search%";
     $params[] = $search_term;
     $params[] = $search_term;
     $params[] = $search_term;
-    $types .= "sss";
+    $params[] = $search_term;
+    $types .= "ssss";
 }
 
-$sql .= " ORDER BY p.featured DESC, p.created_at DESC";
+if ($brand) {
+    $sql .= " AND p.brand = ?";
+    $params[] = $brand;
+    $types .= "s";
+}
+
+if ($price_min > 0) {
+    $sql .= " AND p.price >= ?";
+    $params[] = $price_min;
+    $types .= "d";
+}
+
+if ($price_max > 0) {
+    $sql .= " AND p.price <= ?";
+    $params[] = $price_max;
+    $types .= "d";
+}
+
+// Sắp xếp
+switch ($sort) {
+    case 'price_asc':
+        $sql .= " ORDER BY (p.price * (1 - p.discount_percent/100)) ASC";
+        break;
+    case 'price_desc':
+        $sql .= " ORDER BY (p.price * (1 - p.discount_percent/100)) DESC";
+        break;
+    case 'name_asc':
+        $sql .= " ORDER BY p.name ASC";
+        break;
+    case 'name_desc':
+        $sql .= " ORDER BY p.name DESC";
+        break;
+    case 'discount':
+        $sql .= " ORDER BY p.discount_percent DESC";
+        break;
+    case 'popular':
+        $sql .= " ORDER BY p.featured DESC, p.created_at DESC";
+        break;
+    default:
+        $sql .= " ORDER BY p.featured DESC, p.created_at DESC";
+        break;
+}
+
+// Query để đếm tổng số sản phẩm
+$count_sql = "SELECT COUNT(DISTINCT p.id) as total FROM products p 
+              LEFT JOIN categories c ON p.category_id = c.id 
+              LEFT JOIN product_sizes ps ON p.id = ps.product_id 
+              WHERE " . substr($sql, strpos($sql, "WHERE") + 6);
+$count_stmt = $conn->prepare($count_sql);
+if ($params) {
+    $count_stmt->bind_param($types, ...$params);
+}
+$count_stmt->execute();
+$count_result = $count_stmt->get_result()->fetch_assoc();
+$total_products = $count_result['total'];
+$total_pages = ceil($total_products / $limit);
+
+// Thêm phân trang vào query chính
+$sql .= " LIMIT ? OFFSET ?";
+$params[] = $limit;
+$params[] = $offset;
+$types .= "ii";
 
 // Thực thi query
 $stmt = $conn->prepare($sql);
@@ -55,7 +126,10 @@ $stmt->execute();
 $products = $stmt->get_result();
 
 // Lấy danh mục cho filter
-$categories = $conn->query("SELECT * FROM categories");
+$categories = $conn->query("SELECT * FROM categories ORDER BY name");
+
+// Lấy danh sách brand
+$brands_result = $conn->query("SELECT DISTINCT brand, COUNT(*) as count FROM products WHERE brand IS NOT NULL AND brand != '' GROUP BY brand ORDER BY count DESC");
 
 // Sport types mapping
 $sport_types = [
@@ -66,6 +140,17 @@ $sport_types = [
     'training' => 'Tập luyện',
     'motosport' => 'Motosport',
     'court_sports' => 'Thể thao sân'
+];
+
+// Sort options
+$sort_options = [
+    'newest' => 'Mới nhất',
+    'popular' => 'Phổ biến',
+    'price_asc' => 'Giá: Thấp đến cao',
+    'price_desc' => 'Giá: Cao đến thấp',
+    'name_asc' => 'Tên: A-Z',
+    'name_desc' => 'Tên: Z-A',
+    'discount' => 'Khuyến mãi tốt nhất'
 ];
 
 // Xác định tiêu đề trang
@@ -90,6 +175,9 @@ if ($gender) {
 } elseif ($search) {
     $page_title = "Tìm kiếm: " . htmlspecialchars($search);
     $page_description = "Kết quả tìm kiếm cho '" . htmlspecialchars($search) . "'";
+} elseif ($brand) {
+    $page_title = "Thương hiệu: " . htmlspecialchars($brand);
+    $page_description = "Sản phẩm từ thương hiệu " . htmlspecialchars($brand);
 }
 ?>
 <!DOCTYPE html>
@@ -150,7 +238,7 @@ if ($gender) {
             margin: 0 auto;
         }
 
-        .filter-section {
+        .advanced-search {
             background: white;
             padding: 25px;
             border-radius: 12px;
@@ -200,10 +288,53 @@ if ($gender) {
             color: white;
         }
 
+        .price-range {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .price-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .products-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .results-count {
+            color: var(--gray-medium);
+            font-size: 1rem;
+        }
+
+        .sort-options {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .sort-select {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 8px 15px;
+            background: white;
+            min-width: 200px;
+        }
+
         .products-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 25px;
+            margin-bottom: 40px;
         }
 
         .product-card {
@@ -384,24 +515,35 @@ if ($gender) {
             margin-bottom: 20px;
         }
 
-        .results-count {
-            color: var(--gray-medium);
-            margin-bottom: 20px;
-            font-size: 1rem;
+        .pagination {
+            justify-content: center;
+            margin-top: 40px;
         }
 
-        .sort-options {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            margin-bottom: 20px;
+        .page-link {
+            border: 1px solid #dee2e6;
+            color: #495057;
+            padding: 8px 16px;
+            margin: 0 2px;
+            border-radius: 6px;
         }
 
-        .sort-select {
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            padding: 8px 15px;
-            background: white;
+        .page-link:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .page-item.active .page-link {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        .search-highlight {
+            background: yellow;
+            padding: 2px 4px;
+            border-radius: 2px;
         }
 
         @media (max-width: 768px) {
@@ -418,9 +560,17 @@ if ($gender) {
                 justify-content: center;
             }
             
-            .sort-options {
+            .products-header {
                 flex-direction: column;
                 align-items: stretch;
+            }
+            
+            .sort-options {
+                width: 100%;
+            }
+            
+            .sort-select {
+                width: 100%;
             }
         }
 
@@ -429,30 +579,43 @@ if ($gender) {
                 grid-template-columns: 1fr;
             }
             
-            .filter-section {
+            .advanced-search {
                 padding: 15px;
             }
         }
 
-        .view-options {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .view-btn {
-            padding: 8px 15px;
-            border: 2px solid #e9ecef;
-            background: white;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .view-btn.active {
-            border-color: var(--primary-color);
+        .mobile-filters-btn {
+            display: none;
             background: var(--primary-color);
             color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        @media (max-width: 991.98px) {
+            .mobile-filters-btn {
+                display: block;
+            }
+            
+            .advanced-search {
+                display: none;
+            }
+            
+            .advanced-search.active {
+                display: block;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 300px;
+                height: 100vh;
+                z-index: 1050;
+                overflow-y: auto;
+                background: white;
+            }
         }
     </style>
 </head>
@@ -473,7 +636,7 @@ if ($gender) {
                     <div class="input-group">
                         <input type="text" class="form-control" name="search" 
                                value="<?= htmlspecialchars($search) ?>" 
-                               placeholder="Tìm kiếm sản phẩm theo tên, thương hiệu...">
+                               placeholder="Tìm kiếm sản phẩm theo tên, thương hiệu, mô tả...">
                         <button class="btn btn-dark" type="submit">
                             <i class="fas fa-search"></i> Tìm kiếm
                         </button>
@@ -481,35 +644,88 @@ if ($gender) {
                 </form>
             </div>
 
-            <!-- Filter Section -->
-            <div class="filter-section">
+            <!-- Mobile Filters Button -->
+            <button class="mobile-filters-btn" id="mobileFiltersBtn">
+                <i class="fas fa-filter me-2"></i>Bộ lọc nâng cao
+            </button>
+
+            <!-- Advanced Search & Filters -->
+            <div class="advanced-search" id="advancedSearch">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="filter-title mb-0">Bộ lọc nâng cao</h5>
+                    <button class="btn-close d-lg-none" id="closeFilters"></button>
+                </div>
+
                 <div class="row">
+                    <!-- Price Range -->
                     <div class="col-lg-3 col-md-6">
+                        <div class="filter-group">
+                            <div class="filter-label">Khoảng giá</div>
+                            <form method="GET" class="price-filter-form">
+                                <input type="hidden" name="search" value="<?= htmlspecialchars($search) ?>">
+                                <input type="hidden" name="gender" value="<?= htmlspecialchars($gender) ?>">
+                                <input type="hidden" name="category" value="<?= $category_id ?>">
+                                <input type="hidden" name="sport" value="<?= htmlspecialchars($sport) ?>">
+                                <input type="hidden" name="brand" value="<?= htmlspecialchars($brand) ?>">
+                                
+                                <div class="price-range">
+                                    <input type="number" name="price_min" class="price-input" 
+                                           placeholder="Từ" value="<?= $price_min > 0 ? $price_min : '' ?>">
+                                    <span>-</span>
+                                    <input type="number" name="price_max" class="price-input" 
+                                           placeholder="Đến" value="<?= $price_max > 0 ? $price_max : '' ?>">
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-outline-dark mt-2 w-100">Áp dụng</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Brand Filter -->
+                    <div class="col-lg-3 col-md-6">
+                        <div class="filter-group">
+                            <div class="filter-label">Thương hiệu</div>
+                            <div class="filter-options">
+                                <a href="<?= remove_query_param('brand') ?>" 
+                                   class="filter-btn <?= !$brand ? 'active' : '' ?>">Tất cả</a>
+                                <?php while($brand_row = $brands_result->fetch_assoc()): ?>
+                                    <a href="<?= add_query_param('brand', $brand_row['brand']) ?>" 
+                                       class="filter-btn <?= $brand == $brand_row['brand'] ? 'active' : '' ?>">
+                                        <?= htmlspecialchars($brand_row['brand']) ?>
+                                        <span class="badge bg-light text-dark ms-1"><?= $brand_row['count'] ?></span>
+                                    </a>
+                                <?php endwhile; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gender Filter -->
+                    <div class="col-lg-2 col-md-4">
                         <div class="filter-group">
                             <div class="filter-label">Giới tính</div>
                             <div class="filter-options">
-                                <a href="products.php<?= $search ? '?search=' . urlencode($search) : '' ?>" 
+                                <a href="<?= remove_query_param('gender') ?>" 
                                    class="filter-btn <?= !$gender ? 'active' : '' ?>">Tất cả</a>
-                                <a href="products.php?gender=nam<?= $search ? '&search=' . urlencode($search) : '' ?>" 
+                                <a href="<?= add_query_param('gender', 'nam') ?>" 
                                    class="filter-btn <?= $gender == 'nam' ? 'active' : '' ?>">Nam</a>
-                                <a href="products.php?gender=nu<?= $search ? '&search=' . urlencode($search) : '' ?>" 
+                                <a href="<?= add_query_param('gender', 'nu') ?>" 
                                    class="filter-btn <?= $gender == 'nu' ? 'active' : '' ?>">Nữ</a>
-                                <a href="products.php?gender=unisex<?= $search ? '&search=' . urlencode($search) : '' ?>" 
+                                <a href="<?= add_query_param('gender', 'unisex') ?>" 
                                    class="filter-btn <?= $gender == 'unisex' ? 'active' : '' ?>">Unisex</a>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="col-lg-3 col-md-6">
+                    <!-- Category Filter -->
+                    <div class="col-lg-2 col-md-4">
                         <div class="filter-group">
                             <div class="filter-label">Danh mục</div>
                             <div class="filter-options">
-                                <a href="products.php<?= $search ? '?search=' . urlencode($search) : '' ?>" 
+                                <a href="<?= remove_query_param('category') ?>" 
                                    class="filter-btn <?= !$category_id ? 'active' : '' ?>">Tất cả</a>
                                 <?php 
-                                $categories->data_seek(0); // Reset pointer
+                                $categories->data_seek(0);
                                 while($cat = $categories->fetch_assoc()): ?>
-                                    <a href="products.php?category=<?= $cat['id'] ?><?= $search ? '&search=' . urlencode($search) : '' ?>" 
+                                    <a href="<?= add_query_param('category', $cat['id']) ?>" 
                                        class="filter-btn <?= $category_id == $cat['id'] ? 'active' : '' ?>">
                                         <?= htmlspecialchars($cat['name']) ?>
                                     </a>
@@ -518,15 +734,16 @@ if ($gender) {
                         </div>
                     </div>
                     
-                    <div class="col-lg-3 col-md-6">
+                    <!-- Sport Type Filter -->
+                    <div class="col-lg-2 col-md-4">
                         <div class="filter-group">
                             <div class="filter-label">Loại thể thao</div>
                             <div class="filter-options">
-                                <a href="products.php<?= $search ? '?search=' . urlencode($search) : '' ?>" 
+                                <a href="<?= remove_query_param('sport') ?>" 
                                    class="filter-btn <?= !$sport || $sport == 'all' ? 'active' : '' ?>">Tất cả</a>
                                 <?php foreach ($sport_types as $key => $name): ?>
                                     <?php if ($key != 'none'): ?>
-                                        <a href="products.php?sport=<?= $key ?><?= $search ? '&search=' . urlencode($search) : '' ?>" 
+                                        <a href="<?= add_query_param('sport', $key) ?>" 
                                            class="filter-btn <?= $sport == $key ? 'active' : '' ?>">
                                             <?= $name ?>
                                         </a>
@@ -535,28 +752,34 @@ if ($gender) {
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="col-lg-3 col-md-6">
-                        <div class="filter-group">
-                            <div class="filter-label">Xóa bộ lọc</div>
-                            <div class="filter-options">
-                                <a href="products.php" class="filter-btn" style="background: var(--accent-color); color: white; border-color: var(--accent-color);">
-                                    <i class="fas fa-times me-1"></i>Xóa tất cả
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Clear Filters -->
+                <div class="text-center mt-4">
+                    <a href="products.php" class="btn btn-outline-danger">
+                        <i class="fas fa-times me-2"></i>Xóa tất cả bộ lọc
+                    </a>
                 </div>
             </div>
 
-            <!-- Products Count and Sort -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <!-- Products Header -->
+            <div class="products-header">
                 <div class="results-count">
                     <i class="fas fa-cube me-2"></i>
-                    Tìm thấy <strong><?= $products->num_rows ?></strong> sản phẩm
+                    Tìm thấy <strong><?= $total_products ?></strong> sản phẩm
                     <?php if ($search): ?>
                         cho từ khóa "<strong><?= htmlspecialchars($search) ?></strong>"
                     <?php endif; ?>
+                </div>
+                
+                <div class="sort-options">
+                    <select class="sort-select" id="sortSelect">
+                        <?php foreach ($sort_options as $key => $label): ?>
+                            <option value="<?= $key ?>" <?= $sort == $key ? 'selected' : '' ?>>
+                                <?= $label ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
             </div>
 
@@ -589,6 +812,12 @@ if ($gender) {
                         if ($has_discount) {
                             $current_price = $product['price'] * (1 - $product['discount_percent'] / 100);
                         }
+
+                        // Highlight search term
+                        $product_name = htmlspecialchars($product['name']);
+                        if ($search) {
+                            $product_name = preg_replace("/(" . preg_quote($search, '/') . ")/i", '<span class="search-highlight">$1</span>', $product_name);
+                        }
                     ?>
                     <div class="product-card">
                         <a href="product_detail.php?id=<?= $product['id'] ?>">
@@ -618,7 +847,7 @@ if ($gender) {
                             <div class="product-category"><?= htmlspecialchars($product['category_name']) ?></div>
                             <h3 class="product-name">
                                 <a href="product_detail.php?id=<?= $product['id'] ?>" class="text-dark text-decoration-none">
-                                    <?= htmlspecialchars($product['name']) ?>
+                                    <?= $product_name ?>
                                 </a>
                             </h3>
                             
@@ -670,6 +899,44 @@ if ($gender) {
                     </div>
                     <?php endwhile; ?>
                 </div>
+
+                <!-- Pagination -->
+                <?php if ($total_pages > 1): ?>
+                <nav>
+                    <ul class="pagination">
+                        <?php if ($page > 1): ?>
+                            <li class="page-item">
+                                <a class="page-link" href="<?= add_query_param('page', $page - 1) ?>">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+
+                        <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                            <?php if ($i == 1 || $i == $total_pages || ($i >= $page - 2 && $i <= $page + 2)): ?>
+                                <li class="page-item <?= $i == $page ? 'active' : '' ?>">
+                                    <a class="page-link" href="<?= add_query_param('page', $i) ?>">
+                                        <?= $i ?>
+                                    </a>
+                                </li>
+                            <?php elseif ($i == $page - 3 || $i == $page + 3): ?>
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            <?php endif; ?>
+                        <?php endfor; ?>
+
+                        <?php if ($page < $total_pages): ?>
+                            <li class="page-item">
+                                <a class="page-link" href="<?= add_query_param('page', $page + 1) ?>">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+                    </ul>
+                </nav>
+                <?php endif; ?>
+
             <?php else: ?>
                 <div class="empty-state">
                     <i class="fas fa-search"></i>
@@ -693,45 +960,81 @@ if ($gender) {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Product card animations
+        // Mobile filters toggle
         document.addEventListener('DOMContentLoaded', function() {
+            const mobileFiltersBtn = document.getElementById('mobileFiltersBtn');
+            const advancedSearch = document.getElementById('advancedSearch');
+            const closeFilters = document.getElementById('closeFilters');
+
+            if (mobileFiltersBtn && advancedSearch) {
+                mobileFiltersBtn.addEventListener('click', function() {
+                    advancedSearch.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                });
+
+                closeFilters.addEventListener('click', function() {
+                    advancedSearch.classList.remove('active');
+                    document.body.style.overflow = '';
+                });
+            }
+
+            // Sort select change
+            const sortSelect = document.getElementById('sortSelect');
+            if (sortSelect) {
+                sortSelect.addEventListener('change', function() {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('sort', this.value);
+                    url.searchParams.delete('page');
+                    window.location.href = url.toString();
+                });
+            }
+
+            // Product card animations
             const productCards = document.querySelectorAll('.product-card');
-            
             productCards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = `all 0.6s ease ${index * 0.1}s`;
+                
                 setTimeout(() => {
                     card.style.opacity = '1';
                     card.style.transform = 'translateY(0)';
-                }, index * 100);
-            });
-
-            // Add to cart quick action
-            const quickViewButtons = document.querySelectorAll('.btn-quick-view');
-            quickViewButtons.forEach(button => {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const productId = this.getAttribute('data-product-id');
-                    // Implement quick view functionality here
-                    console.log('Quick view product:', productId);
-                });
+                }, 100);
             });
         });
 
-        // Filter persistence
-        function updateUrlParams() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const currentSearch = urlParams.get('search') || '';
-            
-            // Update all filter links to include search parameter
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                const href = new URL(btn.href, window.location.origin);
-                if (currentSearch) {
-                    href.searchParams.set('search', currentSearch);
-                }
-                btn.href = href.toString();
-            });
+        // Helper functions for URL manipulation
+        function add_query_param(key, value) {
+            const url = new URL(window.location.href);
+            url.searchParams.set(key, value);
+            url.searchParams.delete('page');
+            return url.toString();
         }
 
-        updateUrlParams();
+        function remove_query_param(key) {
+            const url = new URL(window.location.href);
+            url.searchParams.delete(key);
+            url.searchParams.delete('page');
+            return url.toString();
+        }
     </script>
 </body>
 </html>
+
+<?php
+// Helper functions for URL manipulation
+function add_query_param($key, $value) {
+    $url = "products.php?" . http_build_query(array_merge($_GET, [$key => $value, 'page' => 1]));
+    return htmlspecialchars($url);
+}
+
+function remove_query_param($key) {
+    $params = $_GET;
+    unset($params[$key]);
+    unset($params['page']);
+    $url = "products.php?" . http_build_query($params);
+    return htmlspecialchars($url);
+}
+
+$conn->close();
+?>

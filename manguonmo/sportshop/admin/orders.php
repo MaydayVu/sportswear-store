@@ -683,13 +683,18 @@ $stats = $stats_result->fetch_assoc();
                 <i class="fas fa-shopping-bag"></i>
                 <span>Quản lý sản phẩm</span>
             </a>
+            <a href="blog.php">
+                <i class="fas fa-blog"></i>
+                <span>Quản lý bài viết</span>
+            </a>
             <a href="orders.php" class="active">
                 <i class="fas fa-shipping-fast"></i>
                 <span>Quản lý đơn hàng</span>
             </a>
-            <a href="blog.php">
-                <i class="fas fa-blog"></i>
-                <span>Quản lý bài viết</span>
+            </a>
+                <a href="reports.php">
+                <i class="fas fa-chart-bar"></i>
+                <span>Thống kê báo cáo</span>
             </a>
             <a href="../auth/logout.php">
                 <i class="fas fa-sign-out-alt"></i>

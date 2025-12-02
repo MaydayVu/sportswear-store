@@ -2,7 +2,7 @@
 session_start();
 include "config.php";
 
-// Tối ưu query - chỉ lấy các field cần thiết (đã sửa lỗi quantity)
+// Tối ưu query - chỉ lấy các field cần thiết 
 $featured_products = $conn->query("
     SELECT p.id, p.name, p.price, p.discount_percent, p.image,
            c.name AS category_name,
@@ -15,7 +15,7 @@ $featured_products = $conn->query("
     LIMIT 8
 ");
 
-// Lấy sản phẩm mới với ít field hơn (đã sửa lỗi quantity)
+// Lấy sản phẩm mới với ít field hơn 
 $new_products = $conn->query("
     SELECT p.id, p.name, p.price, p.discount_percent, p.image,
            c.name AS category_name,
@@ -27,7 +27,7 @@ $new_products = $conn->query("
     LIMIT 8
 ");
 
-// Lấy danh mục thường (CẬP NHẬT: thêm event_image)
+// Lấy danh mục thường 
 $categories = $conn->query("
     SELECT id, name, slug, event_image 
     FROM categories 
@@ -385,8 +385,6 @@ $featured_categories = $conn->query("
             align-items: center;
             gap: 8px;
         }
-
-        /* Load các style khác sau */
     </style>
     
     <!-- Defer loading của CSS nặng -->

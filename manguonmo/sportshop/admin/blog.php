@@ -515,6 +515,11 @@ if (!empty($search)) {
                 <i class="fas fa-shipping-fast"></i>
                 <span>Quản lý đơn hàng</span>
             </a>
+            </a>
+                <a href="reports.php">
+                <i class="fas fa-chart-bar"></i>
+                <span>Thống kê báo cáo</span>
+            </a>
             <a href="../auth/logout.php">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Đăng xuất</span>

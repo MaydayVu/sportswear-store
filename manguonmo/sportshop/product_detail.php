@@ -22,6 +22,68 @@ if (!$product) {
     exit();
 }
 
+// Kiểm tra xem sản phẩm đã có trong wishlist chưa
+$is_in_wishlist = false;
+if (isset($_SESSION['user_id'])) {
+    $user_id = $_SESSION['user_id'];
+    $wishlist_check_sql = "SELECT id FROM wishlist WHERE user_id = ? AND product_id = ?";
+    $wishlist_check_stmt = $conn->prepare($wishlist_check_sql);
+    $wishlist_check_stmt->bind_param("ii", $user_id, $product_id);
+    $wishlist_check_stmt->execute();
+    $wishlist_result = $wishlist_check_stmt->get_result();
+    $is_in_wishlist = $wishlist_result->num_rows > 0;
+    $wishlist_check_stmt->close();
+}
+
+// Xử lý thêm/xóa khỏi wishlist
+if (isset($_GET['wishlist_action'])) {
+    if (!isset($_SESSION['user_id'])) {
+        $_SESSION['message'] = "Vui lòng đăng nhập để sử dụng tính năng yêu thích!";
+        $_SESSION['message_type'] = "warning";
+        header("Location: auth/login.php?redirect=product_detail.php?id=" . $product_id);
+        exit();
+    }
+    
+    $user_id = $_SESSION['user_id'];
+    $action = $_GET['wishlist_action'];
+    
+    if ($action === 'add') {
+        // Kiểm tra xem sản phẩm đã có trong wishlist chưa
+        $check_stmt = $conn->prepare("SELECT id FROM wishlist WHERE user_id = ? AND product_id = ?");
+        $check_stmt->bind_param("ii", $user_id, $product_id);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
+        
+        if ($check_result->num_rows === 0) {
+            // Thêm vào wishlist
+            $insert_stmt = $conn->prepare("INSERT INTO wishlist (user_id, product_id) VALUES (?, ?)");
+            $insert_stmt->bind_param("ii", $user_id, $product_id);
+            if ($insert_stmt->execute()) {
+                $_SESSION['message'] = "Đã thêm vào danh sách yêu thích!";
+                $_SESSION['message_type'] = "success";
+                $is_in_wishlist = true;
+            }
+            $insert_stmt->close();
+        }
+        $check_stmt->close();
+        
+    } elseif ($action === 'remove') {
+        // Xóa khỏi wishlist
+        $delete_stmt = $conn->prepare("DELETE FROM wishlist WHERE user_id = ? AND product_id = ?");
+        $delete_stmt->bind_param("ii", $user_id, $product_id);
+        if ($delete_stmt->execute()) {
+            $_SESSION['message'] = "Đã xóa khỏi danh sách yêu thích!";
+            $_SESSION['message_type'] = "success";
+            $is_in_wishlist = false;
+        }
+        $delete_stmt->close();
+    }
+    
+    // Quay lại trang sản phẩm
+    header("Location: product_detail.php?id=" . $product_id);
+    exit();
+}
+
 // Lấy các size có sẵn cho sản phẩm
 $sizes_sql = "SELECT * FROM product_sizes WHERE product_id = ? AND quantity > 0 ORDER BY size";
 $sizes_stmt = $conn->prepare($sizes_sql);
@@ -311,6 +373,48 @@ $related_products = $related_stmt->get_result();
             background: #ccc;
             cursor: not-allowed;
         }
+
+        /* Wishlist Button Styles */
+        .wishlist-section {
+            margin-bottom: 20px;
+        }
+
+        .btn-wishlist {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #000;
+            background: transparent;
+            color: #000;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-wishlist:hover {
+            background: #000;
+            color: #fff;
+        }
+
+        .btn-wishlist.in-wishlist {
+            background: #e4002b;
+            border-color: #e4002b;
+            color: #fff;
+        }
+
+        .btn-wishlist.in-wishlist:hover {
+            background: #c40023;
+            border-color: #c40023;
+        }
+
+        .wishlist-icon {
+            font-size: 16px;
+        }
         
         .product-features {
             margin: 30px 0;
@@ -368,6 +472,7 @@ $related_products = $related_stmt->get_result();
             border-radius: 8px;
             overflow: hidden;
             transition: transform 0.3s;
+            position: relative;
         }
 
         .related-product-card:hover {
@@ -403,6 +508,33 @@ $related_products = $related_stmt->get_result();
         .sport-motosport { background: #34495e; color: white; }
         .sport-court_sports { background: #27ae60; color: white; }
 
+        /* Related product wishlist button */
+        .related-wishlist-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #666;
+        }
+
+        .related-wishlist-btn:hover {
+            background: #fff;
+            color: #e4002b;
+        }
+
+        .related-wishlist-btn.in-wishlist {
+            color: #e4002b;
+        }
+
         @media (max-width: 768px) {
             .product-info {
                 padding-left: 0;
@@ -434,6 +566,17 @@ $related_products = $related_stmt->get_result();
             </nav>
 
             <!-- Hiển thị thông báo -->
+            <?php if (isset($_SESSION['message'])): ?>
+            <div class="alert alert-<?php echo $_SESSION['message_type'] === 'success' ? 'success' : 'warning'; ?> alert-dismissible fade show" role="alert">
+                <i class="fas fa-<?php echo $_SESSION['message_type'] === 'success' ? 'check-circle' : 'exclamation-triangle'; ?> me-2"></i>
+                <?php echo $_SESSION['message']; ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <?php 
+                unset($_SESSION['message']);
+                unset($_SESSION['message_type']);
+            endif; ?>
+
             <?php if (isset($success_message)): ?>
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 <i class="fas fa-check-circle me-2"></i>
@@ -524,6 +667,23 @@ $related_products = $related_stmt->get_result();
 
                     <div class="stock-status <?= $total_quantity > 0 ? 'in-stock' : 'out-of-stock' ?>">
                         <?= $total_quantity > 0 ? '✓ Còn hàng' : '✗ Hết hàng' ?>
+                    </div>
+
+                    <!-- Wishlist Button -->
+                    <div class="wishlist-section">
+                        <?php if ($is_in_wishlist): ?>
+                            <a href="product_detail.php?id=<?= $product_id ?>&wishlist_action=remove" 
+                               class="btn-wishlist in-wishlist">
+                                <i class="fas fa-heart wishlist-icon"></i>
+                                Đã thích
+                            </a>
+                        <?php else: ?>
+                            <a href="product_detail.php?id=<?= $product_id ?>&wishlist_action=add" 
+                               class="btn-wishlist">
+                                <i class="far fa-heart wishlist-icon"></i>
+                                Thêm vào yêu thích
+                            </a>
+                        <?php endif; ?>
                     </div>
 
                     <form method="POST" action="">
@@ -635,14 +795,49 @@ $related_products = $related_stmt->get_result();
                     if ($related['discount_percent'] > 0) {
                         $related_price = $related['price'] * (1 - $related['discount_percent'] / 100);
                     }
+                    
+                    // Kiểm tra xem sản phẩm liên quan có trong wishlist không
+                    $related_in_wishlist = false;
+                    if (isset($_SESSION['user_id'])) {
+                        $related_check_sql = "SELECT id FROM wishlist WHERE user_id = ? AND product_id = ?";
+                        $related_check_stmt = $conn->prepare($related_check_sql);
+                        $related_check_stmt->bind_param("ii", $_SESSION['user_id'], $related['id']);
+                        $related_check_stmt->execute();
+                        $related_check_result = $related_check_stmt->get_result();
+                        $related_in_wishlist = $related_check_result->num_rows > 0;
+                        $related_check_stmt->close();
+                    }
                 ?>
                 <div class="col-lg-3 col-md-6 mb-4">
-                    <a href="product_detail.php?id=<?= $related['id'] ?>" class="text-decoration-none text-dark">
-                        <div class="related-product-card">
+                    <div class="related-product-card">
+                        <a href="product_detail.php?id=<?= $related['id'] ?>" class="text-decoration-none text-dark">
                             <img src="assets/images/products/<?= htmlspecialchars($related['image']) ?>" 
                                  alt="<?= htmlspecialchars($related['name']) ?>" class="related-product-image"
                                  onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPsSQ4bqjaCBz4bqjbiBwaOG6p208L3RleHQ+PC9zdmc+'">
-                            <div class="related-product-info">
+                        </a>
+                        
+                        <!-- Wishlist button for related product -->
+                        <?php if (isset($_SESSION['user_id'])): ?>
+                            <?php if ($related_in_wishlist): ?>
+                                <button class="related-wishlist-btn in-wishlist" 
+                                        onclick="window.location.href='product_detail.php?id=<?= $related['id'] ?>&wishlist_action=remove'">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                            <?php else: ?>
+                                <button class="related-wishlist-btn" 
+                                        onclick="window.location.href='product_detail.php?id=<?= $related['id'] ?>&wishlist_action=add'">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                            <?php endif; ?>
+                        <?php else: ?>
+                            <button class="related-wishlist-btn" 
+                                    onclick="window.location.href='auth/login.php?redirect=product_detail.php?id=<?= $related['id'] ?>'">
+                                <i class="far fa-heart"></i>
+                            </button>
+                        <?php endif; ?>
+                        
+                        <div class="related-product-info">
+                            <a href="product_detail.php?id=<?= $related['id'] ?>" class="text-decoration-none text-dark">
                                 <div style="font-weight: 600; margin-bottom: 10px;"><?= htmlspecialchars($related['name']) ?></div>
                                 <div style="font-weight: 700;"><?= number_format($related_price) ?>₫</div>
                                 <?php if ($related['discount_percent'] > 0): ?>
@@ -650,9 +845,9 @@ $related_products = $related_stmt->get_result();
                                         <?= number_format($related['price']) ?>₫
                                     </small>
                                 <?php endif; ?>
-                            </div>
+                            </a>
                         </div>
-                    </a>
+                    </div>
                 </div>
                 <?php endwhile; ?>
             </div>

@@ -23,7 +23,7 @@
                 <h3>HỖ TRỢ</h3>
                 <a href="help.php">Trợ giúp</a>
                 <a href="payment.php">Thanh toán</a>
-                <a href="tracking.php">Theo dõi đơn hàng</a>
+                <a href="order_tracking.php">Theo dõi đơn hàng</a>
                 <a href="shipping.php">Vận chuyển</a>
             </div>
 

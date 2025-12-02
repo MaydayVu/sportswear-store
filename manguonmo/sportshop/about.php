@@ -539,7 +539,6 @@ include "config.php";
                         </div>
                     </div>
                 </div>
-
                 <!-- Member 2 -->
                 <div class="team-card">
                     <div class="member-avatar">HV</div>

@@ -4,63 +4,108 @@ include "config.php";
 
 // Kiểm tra đăng nhập
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php?redirect=wishlist");
+    header("Location: auth/login.php?redirect=wishlist.php");
     exit();
 }
 
 $user_id = $_SESSION['user_id'];
 
 // Xử lý thêm/xóa sản phẩm khỏi wishlist
-if (isset($_POST['action'])) {
-    $product_id = intval($_POST['product_id']);
+if (isset($_GET['action']) && isset($_GET['product_id'])) {
+    $product_id = intval($_GET['product_id']);
+    $action = $_GET['action'];
     
-    if ($_POST['action'] == 'add') {
+    if ($action === 'add') {
         // Kiểm tra xem sản phẩm đã có trong wishlist chưa
         $check_stmt = $conn->prepare("SELECT id FROM wishlist WHERE user_id = ? AND product_id = ?");
         $check_stmt->bind_param("ii", $user_id, $product_id);
         $check_stmt->execute();
         $check_result = $check_stmt->get_result();
         
-        if ($check_result->num_rows == 0) {
+        if ($check_result->num_rows === 0) {
+            // Thêm vào wishlist
             $insert_stmt = $conn->prepare("INSERT INTO wishlist (user_id, product_id) VALUES (?, ?)");
             $insert_stmt->bind_param("ii", $user_id, $product_id);
-            $insert_stmt->execute();
+            if ($insert_stmt->execute()) {
+                $_SESSION['message'] = "Đã thêm vào danh sách yêu thích!";
+                $_SESSION['message_type'] = "success";
+            }
             $insert_stmt->close();
-            
-            $_SESSION['success'] = "Đã thêm sản phẩm vào danh sách yêu thích!";
         } else {
-            $_SESSION['info'] = "Sản phẩm đã có trong danh sách yêu thích!";
+            $_SESSION['message'] = "Sản phẩm đã có trong danh sách yêu thích!";
+            $_SESSION['message_type'] = "warning";
         }
         $check_stmt->close();
         
-    } elseif ($_POST['action'] == 'remove') {
+    } elseif ($action === 'remove') {
+        // Xóa khỏi wishlist
         $delete_stmt = $conn->prepare("DELETE FROM wishlist WHERE user_id = ? AND product_id = ?");
         $delete_stmt->bind_param("ii", $user_id, $product_id);
-        $delete_stmt->execute();
+        if ($delete_stmt->execute()) {
+            $_SESSION['message'] = "Đã xóa khỏi danh sách yêu thích!";
+            $_SESSION['message_type'] = "success";
+        }
         $delete_stmt->close();
+    }
+    
+    // Quay lại trang trước đó
+    header("Location: " . ($_SERVER['HTTP_REFERER'] ?? 'wishlist.php'));
+    exit();
+}
+
+// Xử lý xóa nhiều sản phẩm
+if (isset($_POST['remove_selected'])) {
+    if (!empty($_POST['selected_items'])) {
+        $placeholders = implode(',', array_fill(0, count($_POST['selected_items']), '?'));
+        $types = str_repeat('i', count($_POST['selected_items']));
         
-        $_SESSION['success'] = "Đã xóa sản phẩm khỏi danh sách yêu thích!";
+        $delete_stmt = $conn->prepare("DELETE FROM wishlist WHERE user_id = ? AND product_id IN ($placeholders)");
+        $delete_stmt->bind_param("i" . $types, $user_id, ...$_POST['selected_items']);
+        
+        if ($delete_stmt->execute()) {
+            $_SESSION['message'] = "Đã xóa " . count($_POST['selected_items']) . " sản phẩm khỏi danh sách yêu thích!";
+            $_SESSION['message_type'] = "success";
+        }
+        $delete_stmt->close();
     }
     
     header("Location: wishlist.php");
     exit();
 }
 
+// Xử lý xóa tất cả
+if (isset($_POST['clear_all'])) {
+    $delete_stmt = $conn->prepare("DELETE FROM wishlist WHERE user_id = ?");
+    $delete_stmt->bind_param("i", $user_id);
+    
+    if ($delete_stmt->execute()) {
+        $_SESSION['message'] = "Đã xóa tất cả sản phẩm khỏi danh sách yêu thích!";
+        $_SESSION['message_type'] = "success";
+    }
+    $delete_stmt->close();
+    
+    header("Location: wishlist.php");
+    exit();
+}
+
 // Lấy danh sách sản phẩm trong wishlist
-$wishlist_stmt = $conn->prepare("
-    SELECT p.*, c.name AS category_name, w.id AS wishlist_id 
-    FROM wishlist w 
-    JOIN products p ON w.product_id = p.id 
-    LEFT JOIN categories c ON p.category_id = c.id 
-    WHERE w.user_id = ? 
+$wishlist_query = "
+    SELECT p.*, c.name AS category_name, w.created_at as added_date,
+           (SELECT SUM(quantity) FROM product_sizes WHERE product_id = p.id) as total_quantity
+    FROM wishlist w
+    INNER JOIN products p ON w.product_id = p.id
+    LEFT JOIN categories c ON p.category_id = c.id
+    WHERE w.user_id = ?
     ORDER BY w.created_at DESC
-");
+";
+
+$wishlist_stmt = $conn->prepare($wishlist_query);
 $wishlist_stmt->bind_param("i", $user_id);
 $wishlist_stmt->execute();
 $wishlist_result = $wishlist_stmt->get_result();
 
 // Đếm tổng số sản phẩm trong wishlist
-$total_items = $wishlist_result->num_rows;
+$total_wishlist_items = $wishlist_result->num_rows;
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -73,9 +118,17 @@ $total_items = $wishlist_result->num_rows;
     <link rel="stylesheet" href="assets/css/style.css">
     
     <style>
+        :root {
+            --primary-color: #000;
+            --accent-color: #e4002b;
+            --light-bg: #f8f9fa;
+            --border-color: #dee2e6;
+            --heart-color: #e4002b;
+        }
+
         .wishlist-page {
             padding: 80px 0 60px;
-            background: #f8f9fa;
+            background: var(--light-bg);
             min-height: 100vh;
         }
 
@@ -83,14 +136,13 @@ $total_items = $wishlist_result->num_rows;
             background: linear-gradient(135deg, #000 0%, #333 100%);
             color: white;
             padding: 60px 0;
-            text-align: center;
             margin-bottom: 40px;
         }
 
         .page-title {
             font-size: 2.5rem;
             font-weight: 800;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
         .page-subtitle {
@@ -100,21 +152,27 @@ $total_items = $wishlist_result->num_rows;
 
         .wishlist-stats {
             background: white;
-            border-radius: 15px;
+            border-radius: 12px;
             padding: 25px;
-            box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
             margin-bottom: 30px;
         }
 
-        .stat-item {
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
             text-align: center;
-            padding: 15px;
+        }
+
+        .stat-item {
+            padding: 20px;
         }
 
         .stat-number {
             font-size: 2rem;
-            font-weight: 700;
-            color: #000;
+            font-weight: 800;
+            color: var(--accent-color);
             margin-bottom: 5px;
         }
 
@@ -123,175 +181,154 @@ $total_items = $wishlist_result->num_rows;
             font-size: 0.9rem;
         }
 
-        .wishlist-content {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 25px rgba(0,0,0,0.08);
-            overflow: hidden;
-        }
-
-        .wishlist-header {
-            padding: 25px 30px;
-            border-bottom: 1px solid #e9ecef;
-            display: flex;
-            justify-content: between;
-            align-items: center;
-        }
-
-        .wishlist-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #000;
-            margin: 0;
-        }
-
-        .empty-wishlist {
-            text-align: center;
-            padding: 80px 40px;
-            color: #666;
-        }
-
-        .empty-icon {
-            font-size: 5rem;
-            color: #ddd;
-            margin-bottom: 25px;
-        }
-
-        .empty-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 15px;
-            color: #333;
-        }
-
-        .empty-text {
-            font-size: 1rem;
-            margin-bottom: 30px;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .btn-explore {
-            background: #000;
-            color: white;
-            padding: 12px 35px;
-            border-radius: 25px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .btn-explore:hover {
-            background: #333;
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        /* Products Grid */
-        .products-grid {
-            padding: 30px;
-        }
-
-        .product-card {
+        /* Wishlist Actions */
+        .wishlist-actions {
             background: white;
             border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 3px 15px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
-            position: relative;
-            margin-bottom: 25px;
-        }
-
-        .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-        }
-
-        .product-badges {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            right: 15px;
-            z-index: 2;
+            padding: 20px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
             display: flex;
             justify-content: space-between;
-        }
-
-        .discount-badge {
-            background: #e4002b;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: 700;
-        }
-
-        .wishlist-badge {
-            background: rgba(0,0,0,0.8);
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
             align-items: center;
-            justify-content: center;
-            cursor: pointer;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-wishlist-action {
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: white;
+            color: #495057;
+            font-weight: 600;
             transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .wishlist-badge:hover {
-            background: #e4002b;
-            transform: scale(1.1);
-        }
-
-        .product-image-container {
-            position: relative;
-            overflow: hidden;
+        .btn-wishlist-action:hover {
             background: #f8f9fa;
+            color: var(--primary-color);
         }
 
-        .product-image {
-            width: 100%;
-            height: 220px;
+        .btn-clear-all {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
+
+        .btn-clear-all:hover {
+            background: #c82333;
+            color: white;
+        }
+
+        /* Wishlist Items */
+        .wishlist-items {
+            display: grid;
+            gap: 20px;
+        }
+
+        .wishlist-item {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .wishlist-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 25px rgba(0,0,0,0.15);
+            border-color: var(--accent-color);
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .item-checkbox {
+            margin-right: 15px;
+        }
+
+        .item-content {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+        }
+
+        .item-image {
+            width: 120px;
+            height: 120px;
             object-fit: cover;
-            transition: transform 0.3s ease;
+            border-radius: 8px;
+            flex-shrink: 0;
         }
 
-        .product-card:hover .product-image {
-            transform: scale(1.05);
+        .item-details {
+            flex: 1;
         }
 
-        .product-info {
-            padding: 20px;
-        }
-
-        .product-category {
+        .item-category {
             font-size: 0.8rem;
             color: #666;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
         }
 
-        .product-name {
+        .item-name {
             font-size: 1.1rem;
-            font-weight: 600;
-            line-height: 1.4;
-            margin-bottom: 12px;
-            color: #000;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--primary-color);
         }
 
-        .product-name a {
+        .item-name a {
             color: inherit;
             text-decoration: none;
         }
 
-        .product-name a:hover {
-            color: #e4002b;
+        .item-name a:hover {
+            color: var(--accent-color);
         }
 
-        .product-price {
+        .item-meta {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .item-brand {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .item-gender {
+            font-size: 0.9rem;
+            color: #666;
+            text-transform: capitalize;
+        }
+
+        .item-added {
+            font-size: 0.8rem;
+            color: #999;
+        }
+
+        .item-price-section {
             display: flex;
             align-items: center;
             gap: 10px;
@@ -302,7 +339,7 @@ $total_items = $wishlist_result->num_rows;
         .current-price {
             font-size: 1.2rem;
             font-weight: 700;
-            color: #e4002b;
+            color: var(--accent-color);
         }
 
         .original-price {
@@ -311,34 +348,68 @@ $total_items = $wishlist_result->num_rows;
             text-decoration: line-through;
         }
 
-        .product-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #f0f0f0;
-        }
-
-        .product-size {
-            background: #f8f9fa;
-            padding: 4px 10px;
-            border-radius: 15px;
+        .discount-badge {
+            background: var(--accent-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
             font-size: 0.8rem;
             font-weight: 600;
-            color: #666;
         }
 
-        .product-gender {
-            font-size: 0.8rem;
-            color: #666;
-            text-transform: capitalize;
+        .item-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+        }
+
+        .btn-view {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-view:hover {
+            background: #333;
+            color: white;
+        }
+
+        .btn-remove {
+            background: transparent;
+            color: #dc3545;
+            border: 1px solid #dc3545;
+        }
+
+        .btn-remove:hover {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-add-cart {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .btn-add-cart:hover {
+            background: #c40023;
+            color: white;
         }
 
         .stock-status {
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             font-weight: 600;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
         .stock-in {
@@ -349,137 +420,104 @@ $total_items = $wishlist_result->num_rows;
             color: #dc3545;
         }
 
-        .product-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .btn-add-cart {
-            flex: 1;
-            background: #000;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 6px;
-            font-weight: 600;
-            transition: all 0.3s;
-            text-decoration: none;
+        /* Empty State */
+        .empty-wishlist {
             text-align: center;
-        }
-
-        .btn-add-cart:hover {
-            background: #333;
-            color: white;
-        }
-
-        .btn-add-cart:disabled {
-            background: #6c757d;
-            cursor: not-allowed;
-        }
-
-        .btn-remove {
-            width: 45px;
-            background: #f8f9fa;
-            color: #666;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-        }
-
-        .btn-remove:hover {
-            background: #e4002b;
-            color: white;
-            border-color: #e4002b;
-        }
-
-        .share-section {
-            background: #f8f9fa;
-            padding: 30px;
+            padding: 80px 20px;
+            background: white;
             border-radius: 15px;
-            margin-top: 40px;
-            text-align: center;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
         }
 
-        .share-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 15px;
-            color: #000;
+        .empty-icon {
+            font-size: 4rem;
+            color: #ddd;
+            margin-bottom: 20px;
         }
 
-        .share-buttons {
+        .empty-heart {
+            color: var(--heart-color);
+        }
+
+        /* Bulk Actions Form */
+        .bulk-actions-form {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .bulk-actions-form.active {
+            display: block;
+        }
+
+        .bulk-actions-header {
             display: flex;
-            justify-content: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .share-btn {
-            padding: 10px 20px;
-            border-radius: 25px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s;
-            display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 8px;
+            margin-bottom: 15px;
         }
 
-        .share-facebook {
-            background: #3b5998;
-            color: white;
+        .selected-count {
+            font-weight: 600;
+            color: var(--primary-color);
         }
 
-        .share-twitter {
-            background: #1da1f2;
-            color: white;
-        }
-
-        .share-pinterest {
-            background: #bd081c;
-            color: white;
-        }
-
-        .share-link {
-            background: #000;
-            color: white;
-        }
-
-        .share-btn:hover {
-            transform: translateY(-2px);
-            color: white;
-        }
-
+        /* Responsive */
         @media (max-width: 768px) {
             .page-title {
                 font-size: 2rem;
             }
 
-            .products-grid {
-                padding: 20px;
-            }
-
-            .product-card {
-                margin-bottom: 20px;
-            }
-
-            .product-actions {
+            .item-content {
                 flex-direction: column;
             }
 
-            .btn-remove {
+            .item-image {
                 width: 100%;
-                padding: 10px;
+                height: 200px;
             }
 
-            .wishlist-header {
-                padding: 20px;
+            .wishlist-actions {
                 flex-direction: column;
-                gap: 15px;
-                text-align: center;
+                align-items: stretch;
+            }
+
+            .action-buttons {
+                justify-content: center;
+            }
+
+            .item-actions {
+                flex-direction: column;
+            }
+
+            .btn-action {
+                justify-content: center;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .page-header {
+                padding: 40px 0;
+            }
+
+            .wishlist-item {
+                padding: 20px;
+            }
+
+            .item-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .item-checkbox {
+                align-self: flex-start;
             }
         }
     </style>
@@ -488,255 +526,209 @@ $total_items = $wishlist_result->num_rows;
     <?php include "includes/header.php"; ?>
 
     <div class="wishlist-page">
+        <!-- Page Header -->
         <div class="page-header">
             <div class="container">
-                <h1 class="page-title">Danh sách yêu thích</h1>
-                <p class="page-subtitle">Lưu trữ những sản phẩm bạn yêu thích</p>
+                <h1 class="page-title">❤️ Danh sách yêu thích</h1>
+                <p class="page-subtitle">
+                    Lưu trữ các sản phẩm bạn yêu thích và mua sau
+                </p>
             </div>
         </div>
 
         <div class="container">
             <!-- Thông báo -->
-            <?php if (isset($_SESSION['success'])): ?>
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <?= $_SESSION['success'] ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-                <?php unset($_SESSION['success']); ?>
-            <?php endif; ?>
+            <?php if (isset($_SESSION['message'])): ?>
+            <div class="alert alert-<?php echo $_SESSION['message_type'] === 'success' ? 'success' : 'warning'; ?> alert-dismissible fade show" role="alert">
+                <?php echo $_SESSION['message']; ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <?php 
+                unset($_SESSION['message']);
+                unset($_SESSION['message_type']);
+            endif; ?>
 
-            <?php if (isset($_SESSION['info'])): ?>
-                <div class="alert alert-info alert-dismissible fade show" role="alert">
-                    <?= $_SESSION['info'] ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-                <?php unset($_SESSION['info']); ?>
-            <?php endif; ?>
-
-            <!-- Thống kê -->
+            <!-- Wishlist Stats -->
             <div class="wishlist-stats">
-                <div class="row">
-                    <div class="col-md-3 col-6">
-                        <div class="stat-item">
-                            <div class="stat-number"><?= $total_items ?></div>
-                            <div class="stat-label">Sản phẩm</div>
-                        </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number"><?= $total_wishlist_items ?></div>
+                        <div class="stat-label">Sản phẩm yêu thích</div>
                     </div>
-                    <div class="col-md-3 col-6">
-                        <div class="stat-item">
-                            <div class="stat-number">
-                                <?php
-                                $total_value = 0;
-                                $wishlist_result->data_seek(0);
-                                while ($product = $wishlist_result->fetch_assoc()) {
-                                    $current_price = $product['price'] * (1 - $product['discount_percent'] / 100);
-                                    $total_value += $current_price;
+                    <div class="stat-item">
+                        <div class="stat-number">
+                            <?php
+                            // Tính tổng giá trị wishlist
+                            $total_value = 0;
+                            $wishlist_result->data_seek(0);
+                            while ($item = $wishlist_result->fetch_assoc()) {
+                                $current_price = $item['price'];
+                                if ($item['discount_percent'] > 0) {
+                                    $current_price = $item['price'] * (1 - $item['discount_percent'] / 100);
                                 }
-                                echo number_format($total_value);
-                                ?>₫
-                            </div>
-                            <div class="stat-label">Tổng giá trị</div>
+                                $total_value += $current_price;
+                            }
+                            echo number_format($total_value);
+                            ?>₫
                         </div>
+                        <div class="stat-label">Tổng giá trị</div>
                     </div>
-                    <div class="col-md-3 col-6">
-                        <div class="stat-item">
-                            <div class="stat-number">
-                                <?php
-                                $discounted_items = 0;
-                                $wishlist_result->data_seek(0);
-                                while ($product = $wishlist_result->fetch_assoc()) {
-                                    if ($product['discount_percent'] > 0) {
-                                        $discounted_items++;
-                                    }
+                    <div class="stat-item">
+                        <div class="stat-number">
+                            <?php
+                            // Đếm số sản phẩm đang giảm giá
+                            $discount_count = 0;
+                            $wishlist_result->data_seek(0);
+                            while ($item = $wishlist_result->fetch_assoc()) {
+                                if ($item['discount_percent'] > 0) {
+                                    $discount_count++;
                                 }
-                                echo $discounted_items;
-                                ?>
-                            </div>
-                            <div class="stat-label">Đang giảm giá</div>
+                            }
+                            echo $discount_count;
+                            ?>
                         </div>
-                    </div>
-                    <div class="col-md-3 col-6">
-                        <div class="stat-item">
-                            <div class="stat-number">
-                                <?php
-                                $available_items = 0;
-                                $wishlist_result->data_seek(0);
-                                while ($product = $wishlist_result->fetch_assoc()) {
-                                    $quantity_stmt = $conn->prepare("SELECT SUM(quantity) as total FROM product_sizes WHERE product_id = ?");
-                                    $quantity_stmt->bind_param("i", $product['id']);
-                                    $quantity_stmt->execute();
-                                    $quantity_result = $quantity_stmt->get_result();
-                                    $total_quantity = $quantity_result->fetch_assoc()['total'] ?? 0;
-                                    $quantity_stmt->close();
-                                    
-                                    if ($total_quantity > 0) {
-                                        $available_items++;
-                                    }
-                                }
-                                echo $available_items;
-                                ?>
-                            </div>
-                            <div class="stat-label">Còn hàng</div>
-                        </div>
+                        <div class="stat-label">Đang giảm giá</div>
                     </div>
                 </div>
             </div>
 
-            <div class="wishlist-content">
-                <div class="wishlist-header">
-                    <h2 class="wishlist-title">Sản phẩm yêu thích của bạn</h2>
-                    <div class="wishlist-actions">
-                        <?php if ($total_items > 0): ?>
-                            <form method="POST" action="wishlist.php" class="d-inline">
-                                <input type="hidden" name="action" value="clear_all">
-                                <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Bạn có chắc muốn xóa tất cả sản phẩm khỏi danh sách yêu thích?')">
-                                    <i class="fas fa-trash me-1"></i>Xóa tất cả
-                                </button>
-                            </form>
-                        <?php endif; ?>
+            <?php if ($total_wishlist_items > 0): ?>
+                <!-- Bulk Actions Form -->
+                <form method="POST" class="bulk-actions-form" id="bulkActionsForm">
+                    <div class="bulk-actions-header">
+                        <div class="selected-count" id="selectedCount">Đã chọn 0 sản phẩm</div>
+                        <div class="action-buttons">
+                            <button type="submit" name="remove_selected" class="btn-wishlist-action btn-remove">
+                                <i class="fas fa-trash me-1"></i>Xóa đã chọn
+                            </button>
+                            <button type="button" class="btn-wishlist-action" onclick="clearSelection()">
+                                <i class="fas fa-times me-1"></i>Bỏ chọn
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Wishlist Actions -->
+                <div class="wishlist-actions">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="selectAll">
+                        <label class="form-check-label" for="selectAll">
+                            Chọn tất cả
+                        </label>
+                    </div>
+                    <div class="action-buttons">
+                        <button type="button" class="btn-wishlist-action" onclick="showBulkActions()">
+                            <i class="fas fa-tasks me-1"></i>Thao tác hàng loạt
+                        </button>
+                        <form method="POST" style="display: inline;">
+                            <button type="submit" name="clear_all" class="btn-wishlist-action btn-clear-all" 
+                                    onclick="return confirm('Bạn có chắc chắn muốn xóa tất cả sản phẩm khỏi danh sách yêu thích?')">
+                                <i class="fas fa-trash-alt me-1"></i>Xóa tất cả
+                            </button>
+                        </form>
                     </div>
                 </div>
 
-                <?php if ($total_items > 0): ?>
-                    <div class="products-grid">
-                        <div class="row">
-                            <?php 
-                            $wishlist_result->data_seek(0);
-                            while ($product = $wishlist_result->fetch_assoc()): 
-                                $current_price = $product['price'] * (1 - $product['discount_percent'] / 100);
-                                
-                                // Lấy tổng số lượng từ product_sizes
-                                $quantity_stmt = $conn->prepare("SELECT SUM(quantity) as total_quantity FROM product_sizes WHERE product_id = ?");
-                                $quantity_stmt->bind_param("i", $product['id']);
-                                $quantity_stmt->execute();
-                                $quantity_result = $quantity_stmt->get_result();
-                                $total_quantity = $quantity_result->fetch_assoc()['total_quantity'] ?? 0;
-                                $quantity_stmt->close();
-                                
-                                // Lấy các size có sẵn
-                                $sizes_stmt = $conn->prepare("SELECT size FROM product_sizes WHERE product_id = ? AND quantity > 0 ORDER BY size");
-                                $sizes_stmt->bind_param("i", $product['id']);
-                                $sizes_stmt->execute();
-                                $sizes_result = $sizes_stmt->get_result();
-                                $available_sizes = [];
-                                while ($size = $sizes_result->fetch_assoc()) {
-                                    $available_sizes[] = $size['size'];
-                                }
-                                $sizes_stmt->close();
-                                
-                                $is_out_of_stock = $total_quantity <= 0;
-                            ?>
-                            <div class="col-lg-4 col-md-6">
-                                <div class="product-card">
-                                    <div class="product-badges">
-                                        <?php if ($product['discount_percent'] > 0): ?>
-                                            <div class="discount-badge">-<?= $product['discount_percent'] ?>%</div>
-                                        <?php endif; ?>
-                                        <form method="POST" action="wishlist.php" class="d-inline">
-                                            <input type="hidden" name="action" value="remove">
-                                            <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
-                                            <button type="submit" class="wishlist-badge border-0">
-                                                <i class="fas fa-heart"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-
-                                    <div class="product-image-container">
-                                        <a href="product_detail.php?id=<?= $product['id'] ?>">
-                                            <img src="assets/images/products/<?= htmlspecialchars($product['image']) ?>" 
-                                                 alt="<?= htmlspecialchars($product['name']) ?>" 
-                                                 class="product-image"
-                                                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPsSQ4bqjaCBz4bqjbiBwaOG6p208L3RleHQ+PC9zdmc+'">
-                                        </a>
-                                    </div>
-
-                                    <div class="product-info">
-                                        <div class="product-category"><?= htmlspecialchars($product['category_name']) ?></div>
-                                        <h3 class="product-name">
-                                            <a href="product_detail.php?id=<?= $product['id'] ?>">
-                                                <?= htmlspecialchars($product['name']) ?>
+                <!-- Wishlist Items -->
+                <form method="POST" id="wishlistForm">
+                    <div class="wishlist-items">
+                        <?php 
+                        $wishlist_result->data_seek(0);
+                        while ($item = $wishlist_result->fetch_assoc()): 
+                            $current_price = $item['price'];
+                            $has_discount = $item['discount_percent'] > 0;
+                            if ($has_discount) {
+                                $current_price = $item['price'] * (1 - $item['discount_percent'] / 100);
+                            }
+                            $added_date = date('d/m/Y', strtotime($item['added_date']));
+                        ?>
+                        <div class="wishlist-item">
+                            <div class="item-header">
+                                <div class="form-check item-checkbox">
+                                    <input class="form-check-input item-checkbox" type="checkbox" 
+                                           name="selected_items[]" value="<?= $item['id'] ?>" 
+                                           onchange="updateSelection()">
+                                </div>
+                                <div class="item-content">
+                                    <img src="assets/images/products/<?= htmlspecialchars($item['image']) ?>" 
+                                         alt="<?= htmlspecialchars($item['name']) ?>" 
+                                         class="item-image"
+                                         onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPsSQ4bqjaCBz4bqjbiBwaOG6p208L3RleHQ+PC9zdmc+'">
+                                    <div class="item-details">
+                                        <div class="item-category"><?= htmlspecialchars($item['category_name']) ?></div>
+                                        <h3 class="item-name">
+                                            <a href="product_detail.php?id=<?= $item['id'] ?>">
+                                                <?= htmlspecialchars($item['name']) ?>
                                             </a>
                                         </h3>
                                         
-                                        <div class="product-price">
-                                            <span class="current-price"><?= number_format($current_price) ?>₫</span>
-                                            <?php if ($product['discount_percent'] > 0): ?>
-                                                <span class="original-price"><?= number_format($product['price']) ?>₫</span>
+                                        <div class="item-meta">
+                                            <?php if ($item['brand']): ?>
+                                                <span class="item-brand"><?= htmlspecialchars($item['brand']) ?></span>
                                             <?php endif; ?>
-                                        </div>
-
-                                        <div class="stock-status <?= $is_out_of_stock ? 'stock-out' : 'stock-in' ?>">
-                                            <i class="fas fa-<?= $is_out_of_stock ? 'times' : 'check' ?> me-1"></i>
-                                            <?= $is_out_of_stock ? 'Tạm hết hàng' : 'Còn hàng (' . $total_quantity . ')' ?>
-                                        </div>
-
-                                        <div class="product-meta">
-                                            <?php if (!empty($available_sizes)): ?>
-                                                <span class="product-size">Size: <?= implode(', ', $available_sizes) ?></span>
-                                            <?php else: ?>
-                                                <span class="product-size">Size: Đang cập nhật</span>
-                                            <?php endif; ?>
-                                            <span class="product-gender">
-                                                <?= $product['gender'] == 'nam' ? 'Nam' : ($product['gender'] == 'nu' ? 'Nữ' : 'Unisex') ?>
+                                            <span class="item-gender">
+                                                <?= $item['gender'] == 'nam' ? 'Nam' : ($item['gender'] == 'nu' ? 'Nữ' : 'Unisex') ?>
+                                            </span>
+                                            <span class="item-added">
+                                                <i class="far fa-clock me-1"></i>Thêm ngày <?= $added_date ?>
                                             </span>
                                         </div>
 
-                                        <div class="product-actions">
-                                            <a href="product_detail.php?id=<?= $product['id'] ?>" 
-                                               class="btn-add-cart <?= $is_out_of_stock ? 'disabled' : '' ?>"
-                                               <?= $is_out_of_stock ? 'style="pointer-events: none; opacity: 0.6;"' : '' ?>>
-                                                <i class="fas fa-<?= $is_out_of_stock ? 'eye' : 'shopping-cart' ?> me-1"></i>
-                                                <?= $is_out_of_stock ? 'Xem chi tiết' : 'Thêm vào giỏ' ?>
+                                        <div class="stock-status <?= $item['total_quantity'] > 0 ? 'stock-in' : 'stock-out' ?>">
+                                            <i class="fas fa-<?= $item['total_quantity'] > 0 ? 'check' : 'times' ?> me-1"></i>
+                                            <?= $item['total_quantity'] > 0 ? 'Còn hàng' : 'Hết hàng' ?>
+                                        </div>
+
+                                        <div class="item-price-section">
+                                            <span class="current-price"><?= number_format($current_price) ?>₫</span>
+                                            <?php if ($has_discount): ?>
+                                                <span class="original-price"><?= number_format($item['price']) ?>₫</span>
+                                                <span class="discount-badge">-<?= $item['discount_percent'] ?>%</span>
+                                            <?php endif; ?>
+                                        </div>
+
+                                        <div class="item-actions">
+                                            <a href="product_detail.php?id=<?= $item['id'] ?>" class="btn-action btn-view">
+                                                <i class="fas fa-eye me-1"></i>Xem chi tiết
                                             </a>
-                                            <form method="POST" action="wishlist.php" class="d-inline">
-                                                <input type="hidden" name="action" value="remove">
-                                                <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
-                                                <button type="submit" class="btn-remove">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </form>
+                                            <?php if ($item['total_quantity'] > 0): ?>
+                                                <a href="cart.php?action=add&product_id=<?= $item['id'] ?>" 
+                                                   class="btn-action btn-add-cart">
+                                                    <i class="fas fa-shopping-cart me-1"></i>Thêm vào giỏ
+                                                </a>
+                                            <?php endif; ?>
+                                            <a href="wishlist.php?action=remove&product_id=<?= $item['id'] ?>" 
+                                               class="btn-action btn-remove"
+                                               onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này khỏi danh sách yêu thích?')">
+                                                <i class="fas fa-trash me-1"></i>Xóa
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <?php endwhile; ?>
                         </div>
+                        <?php endwhile; ?>
                     </div>
+                </form>
 
-                    <!-- Share Section -->
-                    <div class="share-section">
-                        <h4 class="share-title">Chia sẻ danh sách yêu thích</h4>
-                        <div class="share-buttons">
-                            <a href="#" class="share-btn share-facebook">
-                                <i class="fab fa-facebook-f"></i> Facebook
-                            </a>
-                            <a href="#" class="share-btn share-twitter">
-                                <i class="fab fa-twitter"></i> Twitter
-                            </a>
-                            <a href="#" class="share-btn share-pinterest">
-                                <i class="fab fa-pinterest"></i> Pinterest
-                            </a>
-                            <a href="#" class="share-btn share-link" onclick="copyWishlistLink()">
-                                <i class="fas fa-link"></i> Sao chép link
-                            </a>
-                        </div>
+            <?php else: ?>
+                <!-- Empty Wishlist -->
+                <div class="empty-wishlist">
+                    <div class="empty-icon">
+                        <i class="fas fa-heart empty-heart"></i>
                     </div>
-
-                <?php else: ?>
-                    <div class="empty-wishlist">
-                        <div class="empty-icon">
-                            <i class="far fa-heart"></i>
-                        </div>
-                        <h3 class="empty-title">Danh sách yêu thích trống</h3>
-                        <p class="empty-text">
-                            Bạn chưa có sản phẩm nào trong danh sách yêu thích. Hãy khám phá cửa hàng và thêm những sản phẩm bạn yêu thích!
-                        </p>
-                        <a href="products.php" class="btn-explore">
-                            <i class="fas fa-shopping-bag me-2"></i>Khám phá sản phẩm
+                    <h3>Danh sách yêu thích trống</h3>
+                    <p class="text-muted mb-4">Bạn chưa có sản phẩm nào trong danh sách yêu thích.</p>
+                    <div class="d-flex gap-3 justify-content-center flex-wrap">
+                        <a href="products.php" class="btn btn-dark btn-lg">
+                            <i class="fas fa-shopping-bag me-2"></i>Tiếp tục mua sắm
+                        </a>
+                        <a href="categories.php" class="btn btn-outline-dark btn-lg">
+                            <i class="fas fa-th-large me-2"></i>Khám phá danh mục
                         </a>
                     </div>
-                <?php endif; ?>
-            </div>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -744,57 +736,85 @@ $total_items = $wishlist_result->num_rows;
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Copy wishlist link
-        function copyWishlistLink() {
-            const tempInput = document.createElement('input');
-            tempInput.value = window.location.href;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempInput);
+        // Select All functionality
+        document.getElementById('selectAll').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.item-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateSelection();
+        });
+
+        // Update selection count
+        function updateSelection() {
+            const selectedItems = document.querySelectorAll('.item-checkbox:checked');
+            const selectedCount = selectedItems.length;
+            document.getElementById('selectedCount').textContent = `Đã chọn ${selectedCount} sản phẩm`;
             
-            alert('Đã sao chép link danh sách yêu thích!');
+            // Update select all checkbox
+            const totalItems = document.querySelectorAll('.item-checkbox').length - 1; // Exclude selectAll itself
+            document.getElementById('selectAll').checked = selectedCount === totalItems;
         }
 
-        // Add to cart from wishlist
-        function addToCartFromWishlist(productId) {
-            // Gửi AJAX request để thêm vào giỏ hàng
-            fetch('add_to_cart.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `product_id=${productId}&qty=1`
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Cập nhật số lượng giỏ hàng trong header
-                    const cartCount = document.querySelector('.cart-count');
-                    if (cartCount) {
-                        cartCount.textContent = data.cart_count;
+        // Show bulk actions form
+        function showBulkActions() {
+            const selectedItems = document.querySelectorAll('.item-checkbox:checked');
+            if (selectedItems.length > 0) {
+                document.getElementById('bulkActionsForm').classList.add('active');
+            } else {
+                alert('Vui lòng chọn ít nhất một sản phẩm để thực hiện thao tác.');
+            }
+        }
+
+        // Clear selection
+        function clearSelection() {
+            const checkboxes = document.querySelectorAll('.item-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            document.getElementById('bulkActionsForm').classList.remove('active');
+            updateSelection();
+        }
+
+        // Auto-submit bulk actions form when remove selected is clicked
+        document.addEventListener('DOMContentLoaded', function() {
+            const bulkForm = document.getElementById('bulkActionsForm');
+            if (bulkForm) {
+                bulkForm.addEventListener('submit', function(e) {
+                    const selectedItems = document.querySelectorAll('.item-checkbox:checked');
+                    if (selectedItems.length === 0) {
+                        e.preventDefault();
+                        alert('Vui lòng chọn ít nhất một sản phẩm để xóa.');
+                        return false;
                     }
                     
-                    // Hiển thị thông báo
-                    alert('Đã thêm sản phẩm vào giỏ hàng!');
-                } else {
-                    alert('Có lỗi xảy ra: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Có lỗi xảy ra khi thêm vào giỏ hàng!');
-            });
-        }
+                    if (!confirm(`Bạn có chắc chắn muốn xóa ${selectedItems.length} sản phẩm khỏi danh sách yêu thích?`)) {
+                        e.preventDefault();
+                        return false;
+                    }
+                });
+            }
+        });
 
-        // Smooth animation for product cards
+        // Lazy load images
         document.addEventListener('DOMContentLoaded', function() {
-            const productCards = document.querySelectorAll('.product-card');
-            productCards.forEach((card, index) => {
-                card.style.animationDelay = `${index * 0.1}s`;
-                card.classList.add('fade-in');
+            const lazyImages = document.querySelectorAll('.item-image');
+            const imageObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        img.src = img.src;
+                        observer.unobserve(img);
+                    }
+                });
             });
+
+            lazyImages.forEach(img => imageObserver.observe(img));
         });
     </script>
 </body>
 </html>
+
+<?php
+$conn->close();
+?>
