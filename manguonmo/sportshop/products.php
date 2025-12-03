@@ -99,9 +99,9 @@ switch ($sort) {
 
 // Query để đếm tổng số sản phẩm
 $count_sql = "SELECT COUNT(DISTINCT p.id) as total FROM products p 
-              LEFT JOIN categories c ON p.category_id = c.id 
-              LEFT JOIN product_sizes ps ON p.id = ps.product_id 
-              WHERE " . substr($sql, strpos($sql, "WHERE") + 6);
+            LEFT JOIN categories c ON p.category_id = c.id 
+            LEFT JOIN product_sizes ps ON p.id = ps.product_id 
+            WHERE " . substr($sql, strpos($sql, "WHERE") + 6);
 $count_stmt = $conn->prepare($count_sql);
 if ($params) {
     $count_stmt->bind_param($types, ...$params);
@@ -635,8 +635,8 @@ if ($gender) {
                 <form method="GET" class="search-form">
                     <div class="input-group">
                         <input type="text" class="form-control" name="search" 
-                               value="<?= htmlspecialchars($search) ?>" 
-                               placeholder="Tìm kiếm sản phẩm theo tên, thương hiệu, mô tả...">
+                            value="<?= htmlspecialchars($search) ?>" 
+                            placeholder="Tìm kiếm sản phẩm theo tên, thương hiệu, mô tả...">
                         <button class="btn btn-dark" type="submit">
                             <i class="fas fa-search"></i> Tìm kiếm
                         </button>
@@ -658,109 +658,94 @@ if ($gender) {
 
                 <div class="row">
                     <!-- Price Range -->
-                    <div class="col-lg-3 col-md-6">
-                        <div class="filter-group">
-                            <div class="filter-label">Khoảng giá</div>
-                            <form method="GET" class="price-filter-form">
-                                <input type="hidden" name="search" value="<?= htmlspecialchars($search) ?>">
-                                <input type="hidden" name="gender" value="<?= htmlspecialchars($gender) ?>">
-                                <input type="hidden" name="category" value="<?= $category_id ?>">
-                                <input type="hidden" name="sport" value="<?= htmlspecialchars($sport) ?>">
-                                <input type="hidden" name="brand" value="<?= htmlspecialchars($brand) ?>">
-                                
-                                <div class="price-range">
-                                    <input type="number" name="price_min" class="price-input" 
-                                           placeholder="Từ" value="<?= $price_min > 0 ? $price_min : '' ?>">
-                                    <span>-</span>
-                                    <input type="number" name="price_max" class="price-input" 
-                                           placeholder="Đến" value="<?= $price_max > 0 ? $price_max : '' ?>">
-                                </div>
-                                <button type="submit" class="btn btn-sm btn-outline-dark mt-2 w-100">Áp dụng</button>
-                            </form>
+                    <form method="GET" class="price-filter-form">
+                        <input type="hidden" name="search" value="<?= htmlspecialchars($search) ?>">
+                        <input type="hidden" name="gender" value="<?= htmlspecialchars($gender) ?>">
+                        <input type="hidden" name="category" value="<?= $category_id ?>">
+                        <input type="hidden" name="sport" value="<?= htmlspecialchars($sport) ?>">
+                        <input type="hidden" name="brand" value="<?= htmlspecialchars($brand) ?>">
+                        <input type="hidden" name="page" value="1"> <!-- Thêm dòng này -->
+                        
+                        <div class="price-range">
+                            <input type="number" name="price_min" class="price-input" 
+                                placeholder="Từ" value="<?= $price_min > 0 ? $price_min : '' ?>">
+                            <span>-</span>
+                            <input type="number" name="price_max" class="price-input" 
+                                placeholder="Đến" value="<?= $price_max > 0 ? $price_max : '' ?>">
                         </div>
-                    </div>
-
+                        <button type="submit" class="btn btn-sm btn-outline-dark mt-2 w-100">Áp dụng</button>
+                    </form>
                     <!-- Brand Filter -->
-                    <div class="col-lg-3 col-md-6">
-                        <div class="filter-group">
-                            <div class="filter-label">Thương hiệu</div>
-                            <div class="filter-options">
-                                <a href="<?= remove_query_param('brand') ?>" 
-                                   class="filter-btn <?= !$brand ? 'active' : '' ?>">Tất cả</a>
-                                <?php while($brand_row = $brands_result->fetch_assoc()): ?>
-                                    <a href="<?= add_query_param('brand', $brand_row['brand']) ?>" 
-                                       class="filter-btn <?= $brand == $brand_row['brand'] ? 'active' : '' ?>">
-                                        <?= htmlspecialchars($brand_row['brand']) ?>
-                                        <span class="badge bg-light text-dark ms-1"><?= $brand_row['count'] ?></span>
-                                    </a>
-                                <?php endwhile; ?>
-                            </div>
+                    <div class="filter-group">
+                        <div class="filter-label">Thương hiệu</div>
+                        <div class="filter-options">
+                            <a href="<?= remove_filter_param('brand') ?>" 
+                            class="filter-btn <?= !$brand ? 'active' : '' ?>">Tất cả</a>
+                            <?php while($brand_row = $brands_result->fetch_assoc()): ?>
+                                <a href="<?= add_filter_param('brand', $brand_row['brand']) ?>" 
+                                class="filter-btn <?= $brand == $brand_row['brand'] ? 'active' : '' ?>">
+                                    <?= htmlspecialchars($brand_row['brand']) ?>
+                                    <span class="badge bg-light text-dark ms-1"><?= $brand_row['count'] ?></span>
+                                </a>
+                            <?php endwhile; ?>
                         </div>
                     </div>
 
                     <!-- Gender Filter -->
-                    <div class="col-lg-2 col-md-4">
-                        <div class="filter-group">
-                            <div class="filter-label">Giới tính</div>
-                            <div class="filter-options">
-                                <a href="<?= remove_query_param('gender') ?>" 
-                                   class="filter-btn <?= !$gender ? 'active' : '' ?>">Tất cả</a>
-                                <a href="<?= add_query_param('gender', 'nam') ?>" 
-                                   class="filter-btn <?= $gender == 'nam' ? 'active' : '' ?>">Nam</a>
-                                <a href="<?= add_query_param('gender', 'nu') ?>" 
-                                   class="filter-btn <?= $gender == 'nu' ? 'active' : '' ?>">Nữ</a>
-                                <a href="<?= add_query_param('gender', 'unisex') ?>" 
-                                   class="filter-btn <?= $gender == 'unisex' ? 'active' : '' ?>">Unisex</a>
-                            </div>
+                    <div class="filter-group">
+                        <div class="filter-label">Giới tính</div>
+                        <div class="filter-options">
+                            <a href="<?= remove_filter_param('gender') ?>" 
+                            class="filter-btn <?= !$gender ? 'active' : '' ?>">Tất cả</a>
+                            <a href="<?= add_filter_param('gender', 'nam') ?>" 
+                            class="filter-btn <?= $gender == 'nam' ? 'active' : '' ?>">Nam</a>
+                            <a href="<?= add_filter_param('gender', 'nu') ?>" 
+                            class="filter-btn <?= $gender == 'nu' ? 'active' : '' ?>">Nữ</a>
+                            <a href="<?= add_filter_param('gender', 'unisex') ?>" 
+                            class="filter-btn <?= $gender == 'unisex' ? 'active' : '' ?>">Unisex</a>
                         </div>
                     </div>
-                    
-                    <!-- Category Filter -->
-                    <div class="col-lg-2 col-md-4">
-                        <div class="filter-group">
-                            <div class="filter-label">Danh mục</div>
-                            <div class="filter-options">
-                                <a href="<?= remove_query_param('category') ?>" 
-                                   class="filter-btn <?= !$category_id ? 'active' : '' ?>">Tất cả</a>
-                                <?php 
-                                $categories->data_seek(0);
-                                while($cat = $categories->fetch_assoc()): ?>
-                                    <a href="<?= add_query_param('category', $cat['id']) ?>" 
-                                       class="filter-btn <?= $category_id == $cat['id'] ? 'active' : '' ?>">
-                                        <?= htmlspecialchars($cat['name']) ?>
-                                    </a>
-                                <?php endwhile; ?>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Sport Type Filter -->
-                    <div class="col-lg-2 col-md-4">
-                        <div class="filter-group">
-                            <div class="filter-label">Loại thể thao</div>
-                            <div class="filter-options">
-                                <a href="<?= remove_query_param('sport') ?>" 
-                                   class="filter-btn <?= !$sport || $sport == 'all' ? 'active' : '' ?>">Tất cả</a>
-                                <?php foreach ($sport_types as $key => $name): ?>
-                                    <?php if ($key != 'none'): ?>
-                                        <a href="<?= add_query_param('sport', $key) ?>" 
-                                           class="filter-btn <?= $sport == $key ? 'active' : '' ?>">
-                                            <?= $name ?>
-                                        </a>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Clear Filters -->
-                <div class="text-center mt-4">
-                    <a href="products.php" class="btn btn-outline-danger">
-                        <i class="fas fa-times me-2"></i>Xóa tất cả bộ lọc
-                    </a>
-                </div>
-            </div>
+                    <!-- Category Filter -->
+                    <div class="filter-group">
+                        <div class="filter-label">Danh mục</div>
+                        <div class="filter-options">
+                            <a href="<?= remove_filter_param('category') ?>" 
+                            class="filter-btn <?= !$category_id ? 'active' : '' ?>">Tất cả</a>
+                            <?php 
+                            $categories->data_seek(0);
+                            while($cat = $categories->fetch_assoc()): ?>
+                                <a href="<?= add_filter_param('category', $cat['id']) ?>" 
+                                class="filter-btn <?= $category_id == $cat['id'] ? 'active' : '' ?>">
+                                    <?= htmlspecialchars($cat['name']) ?>
+                                </a>
+                            <?php endwhile; ?>
+                        </div>
+                    </div>
+
+                    <!-- Sport Type Filter -->
+                    <div class="filter-group">
+                        <div class="filter-label">Loại thể thao</div>
+                        <div class="filter-options">
+                            <a href="<?= remove_filter_param('sport') ?>" 
+                            class="filter-btn <?= !$sport || $sport == 'all' ? 'active' : '' ?>">Tất cả</a>
+                            <?php foreach ($sport_types as $key => $name): ?>
+                                <?php if ($key != 'none'): ?>
+                                    <a href="<?= add_filter_param('sport', $key) ?>" 
+                                    class="filter-btn <?= $sport == $key ? 'active' : '' ?>">
+                                        <?= $name ?>
+                                    </a>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+
+                    <!-- Clear Filters -->
+                    <div class="text-center mt-4">
+                        <a href="<?= get_clear_filters_url() ?>" class="btn btn-outline-danger">
+                            <i class="fas fa-times me-2"></i>Xóa tất cả bộ lọc
+                        </a>
+                    </div>
 
             <!-- Products Header -->
             <div class="products-header">
@@ -822,9 +807,9 @@ if ($gender) {
                     <div class="product-card">
                         <a href="product_detail.php?id=<?= $product['id'] ?>">
                             <img src="assets/images/products/<?= htmlspecialchars($product['image']) ?>" 
-                                 alt="<?= htmlspecialchars($product['name']) ?>" 
-                                 class="product-image"
-                                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjgwIiBoZWlnaHQ9IjI1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPsSQ4bqjaCBz4bqjbiBwaOG6p208L3RleHQ+PC9zdmc+'">
+                                alt="<?= htmlspecialchars($product['name']) ?>" 
+                                class="product-image"
+                                onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjgwIiBoZWlnaHQ9IjI1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPsSQ4bqjaCBz4bqjbiBwaOG6p208L3RleHQ+PC9zdmc+'">
                         </a>
                         
                         <!-- Product Badges -->
@@ -900,13 +885,13 @@ if ($gender) {
                     <?php endwhile; ?>
                 </div>
 
-                <!-- Pagination -->
+                                <!-- Pagination -->
                 <?php if ($total_pages > 1): ?>
                 <nav>
                     <ul class="pagination">
                         <?php if ($page > 1): ?>
                             <li class="page-item">
-                                <a class="page-link" href="<?= add_query_param('page', $page - 1) ?>">
+                                <a class="page-link" href="<?= get_prev_page_url() ?>">
                                     <i class="fas fa-chevron-left"></i>
                                 </a>
                             </li>
@@ -915,7 +900,7 @@ if ($gender) {
                         <?php for ($i = 1; $i <= $total_pages; $i++): ?>
                             <?php if ($i == 1 || $i == $total_pages || ($i >= $page - 2 && $i <= $page + 2)): ?>
                                 <li class="page-item <?= $i == $page ? 'active' : '' ?>">
-                                    <a class="page-link" href="<?= add_query_param('page', $i) ?>">
+                                    <a class="page-link" href="<?= get_page_url($i) ?>">
                                         <?= $i ?>
                                     </a>
                                 </li>
@@ -928,7 +913,7 @@ if ($gender) {
 
                         <?php if ($page < $total_pages): ?>
                             <li class="page-item">
-                                <a class="page-link" href="<?= add_query_param('page', $page + 1) ?>">
+                                <a class="page-link" href="<?= get_next_page_url() ?>">
                                     <i class="fas fa-chevron-right"></i>
                                 </a>
                             </li>
@@ -1022,39 +1007,49 @@ if ($gender) {
 </html>
 
 <?php
-// ... phần đầu code ...
 
-// Helper functions for URL manipulation
-function add_query_param($key, $value) {
+function add_filter_param($key, $value) {
     $params = $_GET;
-    
-    // Nếu key là 'page' và chúng ta đang muốn tăng trang
-    if ($key == 'page' && isset($params['page'])) {
-        $current_page = intval($params['page']);
-        $params['page'] = max(1, $current_page + 1); // Tăng lên 1 trang
-    } else {
-        $params[$key] = $value;
-        
-        // Khi thay đổi filter (không phải page), reset về trang 1
-        if ($key != 'page') {
-            $params['page'] = 1;
-        }
-    }
-    
+    $params[$key] = $value;
+    $params['page'] = 1;
     $url = "products.php?" . http_build_query($params);
     return htmlspecialchars($url);
 }
 
-function remove_query_param($key) {
+
+function remove_filter_param($key) {
     $params = $_GET;
     unset($params[$key]);
-    
-    // Khi xóa filter, reset về trang 1
-    if ($key != 'page') {
-        $params['page'] = 1;
-    }
-    
+    $params['page'] = 1;
     $url = "products.php?" . http_build_query($params);
+    return htmlspecialchars($url);
+}
+
+function get_page_url($page_number) {
+    $params = $_GET;
+    $params['page'] = max(1, intval($page_number));
+    $url = "products.php?" . http_build_query($params);
+    return htmlspecialchars($url);
+}
+
+function get_next_page_url() {
+    $params = $_GET;
+    $current_page = isset($params['page']) ? intval($params['page']) : 1;
+    $params['page'] = $current_page + 1;
+    $url = "products.php?" . http_build_query($params);
+    return htmlspecialchars($url);
+}
+
+function get_prev_page_url() {
+    $params = $_GET;
+    $current_page = isset($params['page']) ? intval($params['page']) : 1;
+    $params['page'] = max(1, $current_page - 1);
+    $url = "products.php?" . http_build_query($params);
+    return htmlspecialchars($url);
+}
+
+function get_clear_filters_url() {
+    $url = "products.php";
     return htmlspecialchars($url);
 }
 
