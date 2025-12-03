@@ -109,7 +109,7 @@ $offset = ($current_page - 1) * $products_per_page;
 // Query chính để lấy sản phẩm
 $products_sql = "
     SELECT p.*, c.name AS category_name,
-           (SELECT SUM(quantity) FROM product_sizes WHERE product_id = p.id) as total_quantity
+        (SELECT SUM(quantity) FROM product_sizes WHERE product_id = p.id) as total_quantity
     FROM products p 
     LEFT JOIN categories c ON p.category_id = c.id 
     $where_sql 
@@ -632,7 +632,7 @@ if ($category_filter > 0) {
                             <ul class="filter-list">
                                 <li class="filter-item">
                                     <a href="categories.php" 
-                                       class="filter-link <?= !$category_filter ? 'active' : '' ?>">
+                                        class="filter-link <?= !$category_filter ? 'active' : '' ?>">
                                         Tất cả danh mục
                                         <span class="product-count"><?= $total_products ?></span>
                                     </a>
@@ -643,7 +643,7 @@ if ($category_filter > 0) {
                                 ?>
                                 <li class="filter-item">
                                     <a href="categories.php?category=<?= $category['id'] ?>" 
-                                       class="filter-link <?= $category_filter == $category['id'] ? 'active' : '' ?>">
+                                        class="filter-link <?= $category_filter == $category['id'] ? 'active' : '' ?>">
                                         <?= htmlspecialchars($category['name']) ?>
                                         <span class="product-count"><?= $category['product_count'] ?></span>
                                     </a>
@@ -658,7 +658,7 @@ if ($category_filter > 0) {
                             <ul class="filter-list">
                                 <li class="filter-item">
                                     <a href="<?= remove_query_param('brand') ?>" 
-                                       class="filter-link <?= empty($brand_filter) ? 'active' : '' ?>">
+                                        class="filter-link <?= empty($brand_filter) ? 'active' : '' ?>">
                                         Tất cả thương hiệu
                                     </a>
                                 </li>
@@ -668,7 +668,7 @@ if ($category_filter > 0) {
                                 ?>
                                 <li class="filter-item">
                                     <a href="<?= add_query_param('brand', $brand['brand']) ?>" 
-                                       class="filter-link <?= $brand_filter == $brand['brand'] ? 'active' : '' ?>">
+                                        class="filter-link <?= $brand_filter == $brand['brand'] ? 'active' : '' ?>">
                                         <?= htmlspecialchars($brand['brand']) ?>
                                         <span class="product-count"><?= $brand['product_count'] ?></span>
                                     </a>
@@ -683,25 +683,25 @@ if ($category_filter > 0) {
                             <ul class="filter-list">
                                 <li class="filter-item">
                                     <a href="<?= remove_query_param('gender') ?>" 
-                                       class="filter-link <?= empty($gender_filter) ? 'active' : '' ?>">
+                                        class="filter-link <?= empty($gender_filter) ? 'active' : '' ?>">
                                         Tất cả
                                     </a>
                                 </li>
                                 <li class="filter-item">
                                     <a href="<?= add_query_param('gender', 'nam') ?>" 
-                                       class="filter-link <?= $gender_filter == 'nam' ? 'active' : '' ?>">
+                                        class="filter-link <?= $gender_filter == 'nam' ? 'active' : '' ?>">
                                         Nam
                                     </a>
                                 </li>
                                 <li class="filter-item">
                                     <a href="<?= add_query_param('gender', 'nu') ?>" 
-                                       class="filter-link <?= $gender_filter == 'nu' ? 'active' : '' ?>">
+                                        class="filter-link <?= $gender_filter == 'nu' ? 'active' : '' ?>">
                                         Nữ
                                     </a>
                                 </li>
                                 <li class="filter-item">
                                     <a href="<?= add_query_param('gender', 'unisex') ?>" 
-                                       class="filter-link <?= $gender_filter == 'unisex' ? 'active' : '' ?>">
+                                        class="filter-link <?= $gender_filter == 'unisex' ? 'active' : '' ?>">
                                         Unisex
                                     </a>
                                 </li>
@@ -714,31 +714,31 @@ if ($category_filter > 0) {
                             <ul class="filter-list">
                                 <li class="filter-item">
                                     <a href="<?= remove_query_param('sport') ?>" 
-                                       class="filter-link <?= empty($sport_filter) ? 'active' : '' ?>">
+                                        class="filter-link <?= empty($sport_filter) ? 'active' : '' ?>">
                                         Tất cả môn
                                     </a>
                                 </li>
                                 <li class="filter-item">
                                     <a href="<?= add_query_param('sport', 'football') ?>" 
-                                       class="filter-link <?= $sport_filter == 'football' ? 'active' : '' ?>">
+                                        class="filter-link <?= $sport_filter == 'football' ? 'active' : '' ?>">
                                         Bóng đá
                                     </a>
                                 </li>
                                 <li class="filter-item">
                                     <a href="<?= add_query_param('sport', 'running') ?>" 
-                                       class="filter-link <?= $sport_filter == 'running' ? 'active' : '' ?>">
+                                        class="filter-link <?= $sport_filter == 'running' ? 'active' : '' ?>">
                                         Chạy bộ
                                     </a>
                                 </li>
                                 <li class="filter-item">
                                     <a href="<?= add_query_param('sport', 'basketball') ?>" 
-                                       class="filter-link <?= $sport_filter == 'basketball' ? 'active' : '' ?>">
+                                        class="filter-link <?= $sport_filter == 'basketball' ? 'active' : '' ?>">
                                         Bóng rổ
                                     </a>
                                 </li>
                                 <li class="filter-item">
                                     <a href="<?= add_query_param('sport', 'training') ?>" 
-                                       class="filter-link <?= $sport_filter == 'training' ? 'active' : '' ?>">
+                                        class="filter-link <?= $sport_filter == 'training' ? 'active' : '' ?>">
                                         Tập luyện
                                     </a>
                                 </li>
@@ -803,10 +803,10 @@ if ($category_filter > 0) {
                                 <div class="product-image-container">
                                     <a href="product_detail.php?id=<?= $product['id'] ?>">
                                         <img src="assets/images/products/<?= htmlspecialchars($product['image']) ?>" 
-                                             alt="<?= htmlspecialchars($product['name']) ?>" 
-                                             class="product-image lazy"
-                                             loading="lazy"
-                                             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjgwIiBoZWlnaHQ9IjI1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPsSQ4bqjaCBz4bqjbiBwaOG6p208L3RleHQ+PC9zdmc+'">
+                                            alt="<?= htmlspecialchars($product['name']) ?>" 
+                                            class="product-image lazy"
+                                            loading="lazy"
+                                            onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjgwIiBoZWlnaHQ9IjI1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPsSQ4bqjaCBz4bqjbiBwaOG6p208L3RleHQ+PC9zdmc+'">
                                     </a>
                                 </div>
 
@@ -853,7 +853,7 @@ if ($category_filter > 0) {
                             <ul class="pagination">
                                 <?php if ($current_page > 1): ?>
                                     <li class="page-item">
-                                        <a class="page-link" href="<?= add_query_param('page', $current_page - 1) ?>">
+                                        <a class="page-link" href="<?= add_query_param('page', $i, false) ?>">
                                             <i class="fas fa-chevron-left"></i>
                                         </a>
                                     </li>
@@ -957,16 +957,23 @@ if ($category_filter > 0) {
 </html>
 
 <?php
-// Helper functions for URL manipulation
 function add_query_param($key, $value) {
-    $url = "categories.php?" . http_build_query(array_merge($_GET, [$key => $value, 'page' => 1]));
+    $params = $_GET;
+    if ($key === 'page') {
+        $params[$key] = $value;
+    } else {
+        $params[$key] = $value;
+        $params['page'] = 1;
+    }
+    
+    $url = "categories.php?" . http_build_query($params);
     return htmlspecialchars($url);
 }
 
 function remove_query_param($key) {
     $params = $_GET;
     unset($params[$key]);
-    unset($params['page']);
+    $params['page'] = 1; 
     $url = "categories.php?" . http_build_query($params);
     return htmlspecialchars($url);
 }
