@@ -1022,16 +1022,38 @@ if ($gender) {
 </html>
 
 <?php
+// ... phần đầu code ...
+
 // Helper functions for URL manipulation
 function add_query_param($key, $value) {
-    $url = "products.php?" . http_build_query(array_merge($_GET, [$key => $value, 'page' => 1]));
+    $params = $_GET;
+    
+    // Nếu key là 'page' và chúng ta đang muốn tăng trang
+    if ($key == 'page' && isset($params['page'])) {
+        $current_page = intval($params['page']);
+        $params['page'] = max(1, $current_page + 1); // Tăng lên 1 trang
+    } else {
+        $params[$key] = $value;
+        
+        // Khi thay đổi filter (không phải page), reset về trang 1
+        if ($key != 'page') {
+            $params['page'] = 1;
+        }
+    }
+    
+    $url = "products.php?" . http_build_query($params);
     return htmlspecialchars($url);
 }
 
 function remove_query_param($key) {
     $params = $_GET;
     unset($params[$key]);
-    unset($params['page']);
+    
+    // Khi xóa filter, reset về trang 1
+    if ($key != 'page') {
+        $params['page'] = 1;
+    }
+    
     $url = "products.php?" . http_build_query($params);
     return htmlspecialchars($url);
 }
