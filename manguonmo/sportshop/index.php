@@ -5,8 +5,8 @@ include "config.php";
 // Tối ưu query - chỉ lấy các field cần thiết 
 $featured_products = $conn->query("
     SELECT p.id, p.name, p.price, p.discount_percent, p.image,
-           c.name AS category_name,
-           (SELECT SUM(quantity) FROM product_sizes WHERE product_id = p.id) as total_quantity
+        c.name AS category_name,
+        (SELECT SUM(quantity) FROM product_sizes WHERE product_id = p.id) as total_quantity
     FROM products p 
     LEFT JOIN categories c ON p.category_id = c.id 
     WHERE p.featured = 1 
@@ -18,8 +18,8 @@ $featured_products = $conn->query("
 // Lấy sản phẩm mới với ít field hơn 
 $new_products = $conn->query("
     SELECT p.id, p.name, p.price, p.discount_percent, p.image,
-           c.name AS category_name,
-           (SELECT SUM(quantity) FROM product_sizes WHERE product_id = p.id) as total_quantity
+        c.name AS category_name,
+        (SELECT SUM(quantity) FROM product_sizes WHERE product_id = p.id) as total_quantity
     FROM products p 
     LEFT JOIN categories c ON p.category_id = c.id 
     WHERE (SELECT SUM(quantity) FROM product_sizes WHERE product_id = p.id) > 0 
@@ -448,8 +448,8 @@ $featured_categories = $conn->query("
                         <!-- Ảnh sự kiện -->
                         <?php if ($category['event_image']): ?>
                             <img src="assets/images/categories/<?= htmlspecialchars($category['event_image']) ?>" 
-                                 alt="<?= htmlspecialchars($category['name']) ?>" 
-                                 class="event-image">
+                                alt="<?= htmlspecialchars($category['name']) ?>" 
+                                class="event-image">
                         <?php else: ?>
                             <div class="event-placeholder">
                                 <i class="fas fa-calendar-star"></i>
@@ -502,7 +502,7 @@ $featured_categories = $conn->query("
                             </div>
                             
                             <a href="products.php?category=<?= $category['id'] ?>" 
-                               class="btn-event <?= $is_upcoming ? 'btn-preview' : '' ?>">
+                                class="btn-event <?= $is_upcoming ? 'btn-preview' : '' ?>">
                                 <i class="fas fa-<?= $is_upcoming ? 'eye' : 'shopping-cart' ?> me-2"></i>
                                 <?= $is_upcoming ? 'Xem trước' : 'Mua ngay' ?>
                             </a>
@@ -532,10 +532,10 @@ $featured_categories = $conn->query("
                     <?php if ($category['event_image']): ?>
                         <!-- Hiển thị ảnh từ database nếu có -->
                         <img src="assets/images/categories/<?= htmlspecialchars($category['event_image']) ?>" 
-                             alt="<?= htmlspecialchars($category['name']) ?>" 
-                             class="category-image lazy"
-                             loading="lazy"
-                             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPsSQ4bqjaCBz4bqjbiBwaOG6p208L3RleHQ+PC9zdmc+'">
+                            alt="<?= htmlspecialchars($category['name']) ?>" 
+                            class="category-image lazy"
+                            loading="lazy"
+                            onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPsSQ4bqjaCBz4bqjbiBwaOG6p208L3RleHQ+PC9zdmc+'">
                     <?php else: ?>
                         <!-- Placeholder với icon đẹp hơn -->
                         <div class="category-image placeholder-image">
@@ -597,10 +597,10 @@ $featured_categories = $conn->query("
                     <div class="product-card">
                         <!-- Lazy loading cho ảnh -->
                         <img src="assets/images/products/<?= htmlspecialchars($product['image']) ?>" 
-                             alt="<?= htmlspecialchars($product['name']) ?>" 
-                             class="product-image lazy"
-                             loading="lazy"
-                             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPsSQ4bqjaCBz4bqjbiBwaOG6p208L3RleHQ+PC9zdmc+'">
+                            alt="<?= htmlspecialchars($product['name']) ?>" 
+                            class="product-image lazy"
+                            loading="lazy"
+                            onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPsSQ4bqjaCBz4bqjbiBwaOG6p208L3RleHQ+PC9zdmc+'">
                         <div class="product-info">
                             <div class="product-name"><?= htmlspecialchars($product['name']) ?></div>
                             <div class="product-category">
@@ -667,10 +667,10 @@ $featured_categories = $conn->query("
                         ?>
                         <div class="product-card">
                             <img src="assets/images/products/<?= htmlspecialchars($product['image']) ?>" 
-                                 alt="<?= htmlspecialchars($product['name']) ?>" 
-                                 class="product-image lazy"
-                                 loading="lazy"
-                                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgFmaWxsPSIjNjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+xJDhuqNoIHPhuqNuIHBhuqdtPC90ZXh0Pjwvc3ZnPg=='">
+                                alt="<?= htmlspecialchars($product['name']) ?>" 
+                                class="product-image lazy"
+                                loading="lazy"
+                                onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgFmaWxsPSIjNjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+xJDhuqNoIHPhuqNuIHBhuqdtPC90ZXh0Pjwvc3ZnPg=='">
                             <div class="product-info">
                                 <div class="product-name"><?= htmlspecialchars($product['name']) ?></div>
                                 <div class="product-category">
