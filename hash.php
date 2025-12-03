@@ -1,5 +1,7 @@
 <?php
 echo password_hash("Admin@123", PASSWORD_DEFAULT);
+echo "\n";
+echo password_hash("User@123", PASSWORD_DEFAULT);
 ?>
 
 -- ======================================
@@ -144,6 +146,20 @@ VALUES (
     '0123456789',
     SHA2('Admin@123', 256),
     'admin'
+),
+(
+    'Nguyễn Văn An',
+    'nguyenvanan@gmail.com',
+    '0912345678',
+    SHA2('User@123', 256),
+    'user'
+),
+(
+    'Trần Thị Bình',
+    'tranthibinh@gmail.com',
+    '0923456789',
+    SHA2('User@123', 256),
+    'user'
 );
 
 

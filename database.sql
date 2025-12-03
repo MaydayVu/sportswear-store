@@ -134,10 +134,18 @@ CREATE TABLE blog (
 
 -- Tạo tài khoản admin
 INSERT INTO users (fullname, email, phone, password, role)
-VALUES (
+VALUES 
+(
     'Quản Trị Viên',
     'admin@sportshop.com',
     '0123456789',
     SHA2('Admin@123', 256),
     'admin'
+),
+(
+    'Nguyễn Văn An',
+    'nguyenvanan@example.com',
+    '0912345678',
+    SHA2('User@123', 256),
+    'user'
 );
