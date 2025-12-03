@@ -152,15 +152,9 @@ VALUES (
     'nguyenvanan@gmail.com',
     '0912345678',
     SHA2('User@123', 256),
-    'user'
-),
-(
-    'Trần Thị Bình',
-    'tranthibinh@gmail.com',
-    '0923456789',
-    SHA2('User@123', 256),
-    'user'
+    'user';
 );
+
 
 
 
