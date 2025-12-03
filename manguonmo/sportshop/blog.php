@@ -514,10 +514,10 @@ include "config.php";
 
         // Lấy danh sách bài viết
         $query = "SELECT b.*, u.fullname as author_name 
-                  FROM blog b 
-                  LEFT JOIN users u ON b.author_id = u.id 
-                  ORDER BY b.created_at DESC 
-                  LIMIT ? OFFSET ?";
+                FROM blog b 
+                LEFT JOIN users u ON b.author_id = u.id 
+                ORDER BY b.created_at DESC 
+                LIMIT ? OFFSET ?";
         
         $stmt = $conn->prepare($query);
         $stmt->bind_param("ii", $limit, $offset);
@@ -538,9 +538,9 @@ include "config.php";
                             <div class="blog-image-container">
                                 <?php if ($blog['thumbnail']): ?>
                                     <img src="/manguonmo/sportshop/assets/images/blog/<?php echo htmlspecialchars($blog['thumbnail']); ?>" 
-                                         alt="<?php echo htmlspecialchars($blog['title']); ?>" 
-                                         class="blog-image"
-                                         onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuG6o3A8L3RleHQ+PC9zdmc+'">
+                                        alt="<?php echo htmlspecialchars($blog['title']); ?>" 
+                                        class="blog-image"
+                                        onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuG6o3A8L3RleHQ+PC9zdmc+'">
                                 <?php else: ?>
                                     <div style="width:100%;height:100%;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);display:flex;align-items:center;justify-content:center;color:white;">
                                         <i class="fas fa-newspaper" style="font-size:4rem;"></i>
@@ -580,9 +580,9 @@ include "config.php";
                             <div class="blog-image-container">
                                 <?php if ($blog['thumbnail']): ?>
                                     <img src="/manguonmo/sportshop/assets/images/blog/<?php echo htmlspecialchars($blog['thumbnail']); ?>" 
-                                         alt="<?php echo htmlspecialchars($blog['title']); ?>" 
-                                         class="blog-image"
-                                         onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuG6o3A8L3RleHQ+PC9zdmc+'">
+                                        alt="<?php echo htmlspecialchars($blog['title']); ?>" 
+                                        class="blog-image"
+                                        onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuG6o3A8L3RleHQ+PC9zdmc+'">
                                 <?php else: ?>
                                     <div style="width:100%;height:100%;background:#f8f9fa;display:flex;align-items:center;justify-content:center;color:#666;">
                                         <i class="fas fa-image" style="font-size:2rem;"></i>
