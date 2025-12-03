@@ -543,10 +543,21 @@ $featured_categories = $conn->query("
                                 <?php
                                 // Icon tương ứng với từng danh mục
                                 $icons = [
+                                    'balo túi xách' => 'bag-shopping',
+                                    'cổ tay' => 'hand',
+                                    'bình nước' => 'wine-bottle',
+                                    'găng tay thể thao' => 'hand-fist',
+                                    'giày motorsport' => 'motorcycle',
+                                    'giày thể thao sân' => 'baseball',
                                     'áo' => 'tshirt',
                                     'quần' => 'user',
-                                    'giày' => 'shoe-prints', 
-                                    'phụ kiện' => 'glasses'
+                                    'giày' => 'shoe-prints',
+                                    'phụ kiện' => 'glasses',
+                                    'nón' => 'hat-cowboy',
+                                    'vớ' => 'socks',
+                                    'kính' => 'glasses',
+                                    'đồng hồ' => 'clock',
+                                    'dây nịt' => 'link'
                                 ];
                                 $icon = 'tag';
                                 $category_lower = strtolower($category['name']);
@@ -556,6 +567,7 @@ $featured_categories = $conn->query("
                                         break;
                                     }
                                 }
+                            
                                 ?>
                                 <i class="fas fa-<?= $icon ?> fa-3x mb-3"></i>
                                 <div class="placeholder-text"><?= htmlspecialchars($category['name']) ?></div>
