@@ -1003,55 +1003,54 @@ if ($gender) {
             return url.toString();
         }
     </script>
+    <?php
+
+    function add_filter_param($key, $value) {
+        $params = $_GET;
+        $params[$key] = $value;
+        $params['page'] = 1;
+        $url = "products.php?" . http_build_query($params);
+        return htmlspecialchars($url);
+    }
+
+
+    function remove_filter_param($key) {
+        $params = $_GET;
+        unset($params[$key]);
+        $params['page'] = 1;
+        $url = "products.php?" . http_build_query($params);
+        return htmlspecialchars($url);
+    }
+
+    function get_page_url($page_number) {
+        $params = $_GET;
+        $params['page'] = max(1, intval($page_number));
+        $url = "products.php?" . http_build_query($params);
+        return htmlspecialchars($url);
+    }
+
+    function get_next_page_url() {
+        $params = $_GET;
+        $current_page = isset($params['page']) ? intval($params['page']) : 1;
+        $params['page'] = $current_page + 1;
+        $url = "products.php?" . http_build_query($params);
+        return htmlspecialchars($url);
+    }
+
+    function get_prev_page_url() {
+        $params = $_GET;
+        $current_page = isset($params['page']) ? intval($params['page']) : 1;
+        $params['page'] = max(1, $current_page - 1);
+        $url = "products.php?" . http_build_query($params);
+        return htmlspecialchars($url);
+    }
+
+    function get_clear_filters_url() {
+        $url = "products.php";
+        return htmlspecialchars($url);
+    }
+
+    $conn->close();
+    ?>
 </body>
 </html>
-
-<?php
-
-function add_filter_param($key, $value) {
-    $params = $_GET;
-    $params[$key] = $value;
-    $params['page'] = 1;
-    $url = "products.php?" . http_build_query($params);
-    return htmlspecialchars($url);
-}
-
-
-function remove_filter_param($key) {
-    $params = $_GET;
-    unset($params[$key]);
-    $params['page'] = 1;
-    $url = "products.php?" . http_build_query($params);
-    return htmlspecialchars($url);
-}
-
-function get_page_url($page_number) {
-    $params = $_GET;
-    $params['page'] = max(1, intval($page_number));
-    $url = "products.php?" . http_build_query($params);
-    return htmlspecialchars($url);
-}
-
-function get_next_page_url() {
-    $params = $_GET;
-    $current_page = isset($params['page']) ? intval($params['page']) : 1;
-    $params['page'] = $current_page + 1;
-    $url = "products.php?" . http_build_query($params);
-    return htmlspecialchars($url);
-}
-
-function get_prev_page_url() {
-    $params = $_GET;
-    $current_page = isset($params['page']) ? intval($params['page']) : 1;
-    $params['page'] = max(1, $current_page - 1);
-    $url = "products.php?" . http_build_query($params);
-    return htmlspecialchars($url);
-}
-
-function get_clear_filters_url() {
-    $url = "products.php";
-    return htmlspecialchars($url);
-}
-
-$conn->close();
-?>
