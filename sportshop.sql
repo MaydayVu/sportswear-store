@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th12 02, 2025 lúc 07:45 AM
+-- Thời gian đã tạo: Th12 03, 2025 lúc 09:36 AM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.0.30
 
@@ -43,7 +43,7 @@ CREATE TABLE `blog` (
 
 INSERT INTO `blog` (`id`, `title`, `slug`, `content`, `thumbnail`, `author_id`, `created_at`) VALUES
 (1, 'Cách chọn giày chạy bộ phù hợp', 'cach-chon-giay-chay-bo-phu-hop', 'Bài viết hướng dẫn chi tiết cách chọn giày chạy bộ dựa trên dáng chân, cự ly chạy và mặt đường...', 'blog_running_shoes.jpg', 1, '2025-12-01 18:23:25'),
-(2, 'Xu hướng thời trang thể thao 2024', 'xuat-huong-thoi-trang-the-thao-2024', 'Tổng hợp những xu hướng thời trang thể thao nổi bật trong năm 2024 từ các thương hiệu lớn...', 'blog_sport_fashion.jpg', 1, '2025-12-01 18:23:25'),
+(2, 'Xu hướng thời trang thể thao 2025', 'xu-huong-thoi-trang-the-thao-2025', 'Tổng hợp những xu hướng thời trang thể thao nổi bật trong năm 2024 từ các thương hiệu lớn...', 'blog_sport_fashion.jpg', 1, '2025-12-01 18:23:25'),
 (3, 'Hướng dẫn bảo quản vợt cầu lông đúng cách', 'huong-dan-bao-quan-vot-cau-long-dung-cach', 'Các bước bảo quản vợt cầu lông để duy trì độ bền và hiệu suất thi đấu...', 'blog_badminton.jpg', 1, '2025-12-01 18:23:25'),
 (4, 'Lợi ích của việc tập luyện với giày đúng chuyên môn', 'loi-ich-cua-viec-tap-luyen-voi-giay-dung-chuyen-mon', 'Phân tích sự khác biệt khi sử dụng giày chuyên dụng cho từng môn thể thao...', 'blog_training_shoes.jpg', 1, '2025-12-01 18:23:25');
 
@@ -62,6 +62,13 @@ CREATE TABLE `carts` (
   `price` decimal(10,2) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `carts`
+--
+
+INSERT INTO `carts` (`id`, `session_id`, `product_id`, `size_id`, `qty`, `price`, `created_at`) VALUES
+(3, 'ktl159rdes87su018lofm7ho4g', 7, 19, 1, 4675000.00, '2025-12-03 07:30:21');
 
 -- --------------------------------------------------------
 
@@ -86,15 +93,14 @@ CREATE TABLE `categories` (
 --
 
 INSERT INTO `categories` (`id`, `name`, `slug`, `is_featured`, `event_image`, `event_start_date`, `event_end_date`, `event_description`, `display_order`) VALUES
-(1, 'Giày bóng đá', 'giay-bong-da', 1, NULL, NULL, NULL, 'Giày chuyên dụng cho bóng đá với công nghệ hiện đại', 1),
-(2, 'Giày chạy bộ', 'giay-chay-bo', 1, NULL, NULL, NULL, 'Giày êm ái cho các runner', 2),
-(3, 'Giày bóng rổ', 'giay-bong-ro', 1, NULL, NULL, NULL, 'Giày hỗ trợ bật cao và di chuyển linh hoạt', 3),
+(1, 'Giày bóng đá', 'giay-bong-da', 1, 'event_nike_mercurial_vapor.jpg', NULL, NULL, 'Giày chuyên dụng cho bóng đá với công nghệ hiện đại', 1),
+(2, 'Giày chạy bộ', 'giay-chay-bo', 1, 'event_nike_alphafly_3.jpg', NULL, NULL, 'Giày êm ái cho các runner', 2),
+(3, 'Giày bóng rổ', 'giay-bong-ro', 1, 'event_nike_lebron_21.jpg', NULL, NULL, 'Giày hỗ trợ bật cao và di chuyển linh hoạt', 3),
 (4, 'Giày tập gym', 'giay-tap-gym', 1, NULL, NULL, NULL, 'Giày ổn định cho tập tạ và cardio', 4),
 (5, 'Giày thể thao sân', 'giay-the-thao-san', 0, NULL, NULL, NULL, 'Giày cho tennis, cầu lông, pickleball', 5),
 (6, 'Giày motorsport', 'giay-motorsport', 0, NULL, NULL, NULL, 'Giày bảo hộ cho đua xe, mô tô', 6),
 (7, 'Áo thể thao', 'ao-the-thao', 1, NULL, NULL, NULL, 'Áo thấm hút mồ hôi các môn thể thao', 7),
 (8, 'Quần thể thao', 'quan-the-thao', 0, NULL, NULL, NULL, 'Quần co giãn thoải mái vận động', 8),
-(9, 'Áo khoác thể thao', 'ao-khoac-the-thao', 0, NULL, NULL, NULL, 'Áo khoác gió, giữ ấm khi tập luyện', 9),
 (10, 'Vợt tennis', 'vot-tennis', 1, NULL, NULL, NULL, 'Vợt tennis chính hãng Wilson, Babolat', 10),
 (11, 'Vợt cầu lông', 'vot-cau-long', 0, NULL, NULL, NULL, 'Vợt cầu lông Yonex, Li-Ning, Victor', 11),
 (12, 'Vợt pickleball', 'vot-pickleball', 0, NULL, NULL, NULL, 'Vợt pickleball Selkirk, Paddletek', 12),
@@ -371,7 +377,7 @@ INSERT INTO `product_sizes` (`id`, `product_id`, `size`, `quantity`, `created_at
 (140, 39, 'One Size', 8, '2025-12-02 06:38:56'),
 (141, 40, 'One Size', 5, '2025-12-02 06:38:56'),
 (142, 41, 'One Size', 25, '2025-12-02 06:38:56'),
-(143, 42, 'M', 56, '2025-12-02 06:41:32');
+(144, 42, 'M', 56, '2025-12-02 15:10:39');
 
 -- --------------------------------------------------------
 
@@ -394,7 +400,21 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `fullname`, `email`, `phone`, `password`, `role`, `created_at`) VALUES
-(1, 'Quản Trị Viên', 'admin@sportshop.com', '0123456789', '$2y$10$5drCc6hODnEkkTpmKy1dLuvbHtIWZtMXOePBDcjUYFrtMl7Atcyj6', 'admin', '2025-12-01 18:21:19');
+(1, 'Quản Trị Viên', 'admin@sportshop.com', '0123456789', '$2y$10$.ccu9MfvuAOgN1iftFXkU.AO02ZTcXl2YpWcL0Al9zqQrE0r5JKRC', 'admin', '2025-12-01 18:21:19'),
+(4, 'Nguyễn Văn An', 'nguyenvanan@gmail.com', '0912345678', '$2y$10$yVSAWCKlBs4oSY4fRu4qou8d6KpOqK67yO5RJBNVH15q19Nw.btxi', 'user', '2025-12-03 06:57:03');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `wishlist`
+--
+
+CREATE TABLE `wishlist` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `product_id` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Chỉ mục cho các bảng đã đổ
@@ -460,6 +480,14 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `email` (`email`);
 
 --
+-- Chỉ mục cho bảng `wishlist`
+--
+ALTER TABLE `wishlist`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_wishlist` (`user_id`,`product_id`),
+  ADD KEY `product_id` (`product_id`);
+
+--
 -- AUTO_INCREMENT cho các bảng đã đổ
 --
 
@@ -473,7 +501,7 @@ ALTER TABLE `blog`
 -- AUTO_INCREMENT cho bảng `carts`
 --
 ALTER TABLE `carts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT cho bảng `categories`
@@ -485,7 +513,7 @@ ALTER TABLE `categories`
 -- AUTO_INCREMENT cho bảng `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT cho bảng `order_details`
@@ -503,13 +531,19 @@ ALTER TABLE `products`
 -- AUTO_INCREMENT cho bảng `product_sizes`
 --
 ALTER TABLE `product_sizes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=144;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=145;
 
 --
 -- AUTO_INCREMENT cho bảng `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT cho bảng `wishlist`
+--
+ALTER TABLE `wishlist`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Các ràng buộc cho các bảng đã đổ
@@ -553,6 +587,13 @@ ALTER TABLE `products`
 --
 ALTER TABLE `product_sizes`
   ADD CONSTRAINT `product_sizes_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
+
+--
+-- Các ràng buộc cho bảng `wishlist`
+--
+ALTER TABLE `wishlist`
+  ADD CONSTRAINT `wishlist_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `wishlist_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
