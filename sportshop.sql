@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th12 03, 2025 lúc 09:36 AM
+-- Thời gian đã tạo: Th12 04, 2025 lúc 03:26 AM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.0.30
 
@@ -62,13 +62,6 @@ CREATE TABLE `carts` (
   `price` decimal(10,2) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Đang đổ dữ liệu cho bảng `carts`
---
-
-INSERT INTO `carts` (`id`, `session_id`, `product_id`, `size_id`, `qty`, `price`, `created_at`) VALUES
-(3, 'ktl159rdes87su018lofm7ho4g', 7, 19, 1, 4675000.00, '2025-12-03 07:30:21');
 
 -- --------------------------------------------------------
 
@@ -131,6 +124,14 @@ CREATE TABLE `orders` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Đang đổ dữ liệu cho bảng `orders`
+--
+
+INSERT INTO `orders` (`id`, `user_id`, `total`, `payment_method`, `status`, `fullname`, `phone`, `email`, `address`, `note`, `created_at`) VALUES
+(16, 4, 15055000.00, 'momo', 'pending', 'Nguyễn Văn An', '0312951321', 'nguyenvanan@gmail.com', 'TP HCM', '', '2025-12-04 02:25:46'),
+(17, 4, 10255000.00, 'bank', 'paid', 'Nguyễn Văn An', '0312951321', 'nguyenvanan@gmail.com', 'TP HCM', '', '2025-12-04 02:26:36');
+
 -- --------------------------------------------------------
 
 --
@@ -143,8 +144,21 @@ CREATE TABLE `order_details` (
   `product_id` int(11) NOT NULL,
   `size_id` int(11) NOT NULL,
   `price` decimal(10,2) NOT NULL,
-  `qty` int(11) NOT NULL
+  `qty` int(11) NOT NULL,
+  `size` varchar(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `order_details`
+--
+
+INSERT INTO `order_details` (`id`, `order_id`, `product_id`, `size_id`, `price`, `qty`, `size`) VALUES
+(1, 16, 7, 20, 4675000.00, 1, '40'),
+(2, 16, 19, 105, 380000.00, 1, 'M'),
+(3, 16, 1, 2, 4420000.00, 1, '40'),
+(4, 16, 6, 15, 5580000.00, 1, '41'),
+(5, 17, 6, 15, 5580000.00, 1, '41'),
+(6, 17, 7, 20, 4675000.00, 1, '40');
 
 -- --------------------------------------------------------
 
@@ -236,7 +250,7 @@ CREATE TABLE `product_sizes` (
 
 INSERT INTO `product_sizes` (`id`, `product_id`, `size`, `quantity`, `created_at`) VALUES
 (1, 1, '39', 8, '2025-12-02 06:38:56'),
-(2, 1, '40', 12, '2025-12-02 06:38:56'),
+(2, 1, '40', 11, '2025-12-02 06:38:56'),
 (3, 1, '41', 15, '2025-12-02 06:38:56'),
 (4, 1, '42', 10, '2025-12-02 06:38:56'),
 (5, 1, '43', 6, '2025-12-02 06:38:56'),
@@ -249,12 +263,12 @@ INSERT INTO `product_sizes` (`id`, `product_id`, `size`, `quantity`, `created_at
 (12, 3, '41', 11, '2025-12-02 06:38:56'),
 (13, 3, '42', 7, '2025-12-02 06:38:56'),
 (14, 6, '40', 15, '2025-12-02 06:38:56'),
-(15, 6, '41', 18, '2025-12-02 06:38:56'),
+(15, 6, '41', 16, '2025-12-02 06:38:56'),
 (16, 6, '42', 20, '2025-12-02 06:38:56'),
 (17, 6, '43', 12, '2025-12-02 06:38:56'),
 (18, 6, '44', 5, '2025-12-02 06:38:56'),
 (19, 7, '39', 10, '2025-12-02 06:38:56'),
-(20, 7, '40', 13, '2025-12-02 06:38:56'),
+(20, 7, '40', 11, '2025-12-02 06:38:56'),
 (21, 7, '41', 16, '2025-12-02 06:38:56'),
 (22, 7, '42', 11, '2025-12-02 06:38:56'),
 (23, 8, '40', 8, '2025-12-02 06:38:56'),
@@ -339,7 +353,7 @@ INSERT INTO `product_sizes` (`id`, `product_id`, `size`, `quantity`, `created_at
 (102, 15, 'XL', 12, '2025-12-02 06:38:56'),
 (103, 15, 'XXL', 6, '2025-12-02 06:38:56'),
 (104, 19, 'S', 8, '2025-12-02 06:38:56'),
-(105, 19, 'M', 12, '2025-12-02 06:38:56'),
+(105, 19, 'M', 11, '2025-12-02 06:38:56'),
 (106, 19, 'L', 10, '2025-12-02 06:38:56'),
 (107, 19, 'XL', 6, '2025-12-02 06:38:56'),
 (108, 20, 'XS', 6, '2025-12-02 06:38:56'),
@@ -377,7 +391,8 @@ INSERT INTO `product_sizes` (`id`, `product_id`, `size`, `quantity`, `created_at
 (140, 39, 'One Size', 8, '2025-12-02 06:38:56'),
 (141, 40, 'One Size', 5, '2025-12-02 06:38:56'),
 (142, 41, 'One Size', 25, '2025-12-02 06:38:56'),
-(144, 42, 'M', 56, '2025-12-02 15:10:39');
+(145, 42, 'M', 56, '2025-12-04 01:04:49'),
+(146, 42, '30', 5, '2025-12-04 01:04:49');
 
 -- --------------------------------------------------------
 
@@ -415,6 +430,14 @@ CREATE TABLE `wishlist` (
   `product_id` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `wishlist`
+--
+
+INSERT INTO `wishlist` (`id`, `user_id`, `product_id`, `created_at`) VALUES
+(1, 4, 19, '2025-12-03 10:27:31'),
+(2, 4, 6, '2025-12-04 02:26:16');
 
 --
 -- Chỉ mục cho các bảng đã đổ
@@ -501,7 +524,7 @@ ALTER TABLE `blog`
 -- AUTO_INCREMENT cho bảng `carts`
 --
 ALTER TABLE `carts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT cho bảng `categories`
@@ -513,13 +536,13 @@ ALTER TABLE `categories`
 -- AUTO_INCREMENT cho bảng `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT cho bảng `order_details`
 --
 ALTER TABLE `order_details`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT cho bảng `products`
@@ -531,7 +554,7 @@ ALTER TABLE `products`
 -- AUTO_INCREMENT cho bảng `product_sizes`
 --
 ALTER TABLE `product_sizes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=145;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=147;
 
 --
 -- AUTO_INCREMENT cho bảng `users`
@@ -543,7 +566,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT cho bảng `wishlist`
 --
 ALTER TABLE `wishlist`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- Các ràng buộc cho các bảng đã đổ
